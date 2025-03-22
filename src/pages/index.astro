@@ -1,25 +1,54 @@
 ---
-import '../styles/global.css';
-// Component Imports
-import Button from '../components/Button.astro';
-
-// Full Astro Component Syntax:
-// https://docs.astro.build/basics/astro-components/
+import "../styles/global.css";
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro + TailwindCSS</title>
-	</head>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>AoaB</title>
+  </head>
 
-	<body>
-		<div class="grid place-items-center h-screen content-center">
-			<Button>Tailwind Button in Astro!</Button>
-			<a href="/markdown-page" class="p-4 underline">Markdown is also supported...</a>
-		</div>
-	</body>
+  <body>
+    <div class="banner">
+      <div class="slider" style="--quantity: 10">
+        <div class="item" style="--position: 1">
+          <img src="assets/gallery/01.jpg" alt="" />
+        </div>
+        <div class="item" style="--position: 2">
+          <img src="assets/gallery/02.png" alt="" />
+        </div>
+        <div class="item" style="--position: 3">
+          <img src="assets/gallery/03.jpeg" alt="" />
+        </div>
+        <div class="item" style="--position: 4">
+          <img src="assets/gallery/04.jpeg" alt="" />
+        </div>
+        <div class="item" style="--position: 5">
+          <img src="assets/gallery/05.jpeg" alt="" />
+        </div>
+        <div class="item" style="--position: 6">
+          <img src="assets/gallery/06.jpg" alt="" />
+        </div>
+        <div class="item" style="--position: 7">
+          <img src="assets/gallery/07.jpg" alt="" />
+        </div>
+        <div class="item" style="--position: 8">
+          <img src="assets/gallery/08.jpg" alt="" />
+        </div>
+        <div class="item" style="--position: 9">
+          <img src="assets/gallery/09.jpg" alt="" />
+        </div>
+        <div class="item" style="--position: 10">
+          <img src="assets/gallery/10.jpg" alt="" />
+        </div>
+      </div>
+      <div class="content">
+        <h1 data-content="AOAB">AOAB</h1>
+        <div class="model"></div>
+      </div>
+    </div>
+  </body>
 </html>
