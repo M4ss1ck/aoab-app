@@ -218,14 +218,39 @@
       justify-content: space-between;
       align-items: center;
       z-index: 1;
+      animation: contentEntrance 1.2s ease-out both;
   }
+
+  @keyframes contentEntrance {
+      from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(40px);
+      }
+      to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+      }
+  }
+
   .banner .content h1{
       font-family: 'ICA Rubrik';
       font-size: 16em;
       line-height: 1em;
-      color: #25283B;
       position: relative;
+      background: linear-gradient(90deg, #25283B, #6a11cb, #2575fc, #25283B);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+              background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: textGradient 8s ease infinite;
   }
+
+  @keyframes textGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+  }
+
   .banner .content h1::after{
       position: absolute;
       inset: 0 0 0 0;
@@ -233,6 +258,12 @@
       z-index: 2;
       -webkit-text-stroke: 2px #d2d2d2;
       color: transparent;
+      animation: strokeShimmer 6s ease infinite;
+  }
+
+  @keyframes strokeShimmer {
+      0%, 100% { -webkit-text-stroke-color: rgba(210, 210, 210, 0.6); }
+      50% { -webkit-text-stroke-color: rgba(255, 255, 255, 0.95); }
   }
   .banner .content .author{
       font-family: Poppins;
