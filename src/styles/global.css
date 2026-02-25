@@ -39,6 +39,15 @@
   --sidebar-ring: oklch(0.708 0 0);
 
   --quantity: 10;
+
+  /* Carousel tuning */
+  --carousel-perspective: 800px;
+  --carousel-tilt: -8deg;
+  --carousel-depth: 500px;
+  --carousel-depth-vw: 40vw;
+  --carousel-speed: 20s;
+  --carousel-w: 200px;
+  --carousel-h: 250px;
 }
 
 .dark {
@@ -123,7 +132,14 @@
   body {
     background: linear-gradient(270deg, #6a11cb, #2575fc, #6a11cb);
     background-size: 400% 100%;
-    animation: gradientShift 15s ease infinite;
+    -webkit-animation: gradientShift 15s ease infinite;
+            animation: gradientShift 15s ease infinite;
+  }
+
+  @-webkit-keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 
   @keyframes gradientShift {
@@ -145,15 +161,15 @@
   .banner .slider {
     position: absolute;
     top: 10%;
-    left: calc(50% - 100px);
-    width: 200px;
-    height: 250px;
+    left: calc(50% - var(--carousel-w) / 2);
+    width: var(--carousel-w);
+    height: var(--carousel-h);
     overflow: visible;
 
     transform-style: preserve-3d;
-    transform: perspective(1000px);
-    -webkit-animation: autoRun 20s linear infinite;
-            animation: autoRun 20s linear infinite;
+    transform: perspective(var(--carousel-perspective));
+    -webkit-animation: autoRun var(--carousel-speed) linear infinite;
+            animation: autoRun var(--carousel-speed) linear infinite;
     z-index: 2;
 
     -webkit-backface-visibility: hidden;
@@ -161,32 +177,32 @@
   }
 
   .banner .slider:hover {
-    animation-play-state: paused;
+    -webkit-animation-play-state: paused;
+            animation-play-state: paused;
   }
 
   @-webkit-keyframes autoRun {
     from {
-      transform: perspective(1000px) rotateX(-16deg) rotateY(0deg);
+      transform: perspective(var(--carousel-perspective)) rotateX(var(--carousel-tilt)) rotateY(0deg);
     } to {
-      transform: perspective(1000px) rotateX(-16deg) rotateY(360deg);
+      transform: perspective(var(--carousel-perspective)) rotateX(var(--carousel-tilt)) rotateY(360deg);
     }
   }
-  
+
   @keyframes autoRun {
     from {
-      transform: perspective(1000px) rotateX(-16deg) rotateY(0deg);
+      transform: perspective(var(--carousel-perspective)) rotateX(var(--carousel-tilt)) rotateY(0deg);
     } to {
-      transform: perspective(1000px) rotateX(-16deg) rotateY(360deg);
+      transform: perspective(var(--carousel-perspective)) rotateX(var(--carousel-tilt)) rotateY(360deg);
     }
   }
   
   .banner .slider .item {
     position: absolute;
     inset: 0 0 0 0;
-    transform: 
-      /* Reverse transform order AND adjust translateZ */
+    transform:
       rotateY(calc((var(--position) - 1) * (360 / var(--quantity)) * 1deg))
-      translateZ(min(55vw, 550px)); /* Responsive Z-translation */
+      translateZ(min(var(--carousel-depth-vw), var(--carousel-depth)));
   }
   
   .banner .slider .item img {
@@ -218,7 +234,19 @@
       justify-content: space-between;
       align-items: center;
       z-index: 1;
-      animation: contentEntrance 1.2s ease-out both;
+      -webkit-animation: contentEntrance 1.2s ease-out both;
+              animation: contentEntrance 1.2s ease-out both;
+  }
+
+  @-webkit-keyframes contentEntrance {
+      from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(40px);
+      }
+      to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+      }
   }
 
   @keyframes contentEntrance {
@@ -242,7 +270,14 @@
       -webkit-background-clip: text;
               background-clip: text;
       -webkit-text-fill-color: transparent;
-      animation: textGradient 8s ease infinite;
+      -webkit-animation: textGradient 8s ease infinite;
+              animation: textGradient 8s ease infinite;
+  }
+
+  @-webkit-keyframes textGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
   }
 
   @keyframes textGradient {
@@ -258,7 +293,13 @@
       z-index: 2;
       -webkit-text-stroke: 2px #d2d2d2;
       color: transparent;
-      animation: strokeShimmer 6s ease infinite;
+      -webkit-animation: strokeShimmer 6s ease infinite;
+              animation: strokeShimmer 6s ease infinite;
+  }
+
+  @-webkit-keyframes strokeShimmer {
+      0%, 100% { -webkit-text-stroke-color: rgba(210, 210, 210, 0.6); }
+      50% { -webkit-text-stroke-color: rgba(255, 255, 255, 0.95); }
   }
 
   @keyframes strokeShimmer {
@@ -286,13 +327,10 @@
       z-index: 1;
   }
   @media screen and (max-width: 1023px) {
-      .banner .slider{
-          width: 160px;
-          height: 200px;
-          left: calc(50% - 80px);
-      }
-      .banner .slider .item{
-          transform: rotateY(calc( (var(--position) - 1) * (360 / var(--quantity)) * 1deg)) translateZ(min(55vw, 500px));
+      :root {
+          --carousel-w: 160px;
+          --carousel-h: 200px;
+          --carousel-depth: 320px;
       }
       .banner .content h1{
           text-align: center;
@@ -312,15 +350,10 @@
       }
   }
   @media screen and (max-width: 767px) {
-      .banner .slider{
-          width: 100px;
-          height: 150px;
-          left: calc(50% - 50px);
-      }
-      .banner .slider .item{
-          transform:
-              rotateY(calc( (var(--position) - 1) * (360 / var(--quantity)) * 1deg))
-              translateZ(min(55vw, 420px));
+      :root {
+          --carousel-w: 100px;
+          --carousel-h: 150px;
+          --carousel-depth: 280px;
       }
       .banner .content h1{
           font-size: 5em;
