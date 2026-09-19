@@ -34,25 +34,14 @@ const MAX_DURATION = 3;
  */
 const MIN_DURATION = 2.2;
 
-const SESSION_KEY = 'aoab:intro-seen';
-
-export function introAlreadySeen(): boolean {
-  try {
-    return sessionStorage.getItem(SESSION_KEY) === '1';
-  } catch {
-    // Private mode and blocked storage both land here. Showing the intro again
-    // is the harmless failure.
-    return false;
-  }
-}
-
-export function markIntroSeen(): void {
-  try {
-    sessionStorage.setItem(SESSION_KEY, '1');
-  } catch {
-    /* nothing to do */
-  }
-}
+/*
+ * The intro runs on every visit rather than once per session.
+ *
+ * It is the strongest thing on the page and the reason the site is memorable,
+ * and it is short and skippable, so hiding it from returning visitors costs
+ * more than it saves. The skip control is visible from the first frame for
+ * anyone who disagrees.
+ */
 
 export class Intro {
   private readonly renderer: Renderer;
@@ -309,7 +298,6 @@ export class Intro {
   private finish(): void {
     if (this.finished) return;
     this.finished = true;
-    markIntroSeen();
     this.resolveFinished?.();
   }
 

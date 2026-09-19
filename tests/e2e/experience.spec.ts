@@ -112,16 +112,51 @@ test.describe('the enhanced experience', () => {
     await expect(finale).toBeHidden({ timeout: 8000 });
   });
 
-  test('the intro plays once per session', async ({ page }) => {
+  test('the intro plays on every visit, not just the first', async ({ page }) => {
     await page.goto('/');
+    // The drawing is on screen before the gallery takes over.
+    await expect(page.locator('[data-intro]')).toBeVisible();
     await ready(page);
     await expect(page.locator('[data-intro]')).toBeHidden();
 
     await page.reload();
+    // A returning visitor sees it again: it is short, skippable, and the best
+    // thing on the page.
+    await expect(page.locator('[data-intro]')).toBeVisible();
     await ready(page);
-    // Second visit skips straight to the gallery: the intro layer is hidden
-    // from the start rather than replaying.
     await expect(page.locator('[data-intro]')).toBeHidden();
+  });
+
+  test('animates the scene title once per change, not twice', async ({ page }) => {
+    // Regression guard. The renderer announces a scene change when the
+    // transition starts and used to announce it again when the transition
+    // settled, so every title played its entrance animation twice - visibly a
+    // double blink, and read out twice by a screen reader.
+    await page.goto('/');
+    await ready(page);
+
+    await page.evaluate(() => {
+      const target = document.querySelector('[data-scene-title]')!;
+      (window as Window & { __titleRebuilds?: number }).__titleRebuilds = 0;
+      new MutationObserver((records) => {
+        for (const record of records) {
+          // setTitle() clears the element and appends one span per character,
+          // so a rebuild shows up as removed children.
+          if (record.removedNodes.length > 0) {
+            (window as Window & { __titleRebuilds?: number }).__titleRebuilds! += 1;
+            return;
+          }
+        }
+      }).observe(target, { childList: true });
+    });
+
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(4000);
+
+    const rebuilds = await page.evaluate(
+      () => (window as Window & { __titleRebuilds?: number }).__titleRebuilds ?? 0,
+    );
+    expect(rebuilds).toBe(1);
   });
 
   test('has no detectable accessibility violations', async ({ page }) => {

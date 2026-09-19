@@ -2,7 +2,7 @@ import gsap from 'gsap';
 import { GalleryRenderer } from './gl/renderer';
 import { NavigationController } from './navigation';
 import { Chrome } from './chrome';
-import { Intro, introAlreadySeen } from './intro';
+import { Intro } from './intro';
 import { Finale } from './finale';
 import type { Scene } from './scenes';
 
@@ -185,17 +185,10 @@ export function boot(data: BootData): void {
     introLayer?.setAttribute('hidden', '');
     chrome.reveal();
     void renderer.reveal(reducedMotion ? 0.3 : 1.1);
-    renderer.onSceneChange?.(0, data.scenes[0]);
     chrome.update(0, data.scenes[0]);
     root.focus({ preventScroll: true });
   };
 
-  if (introAlreadySeen()) {
-    introLayer?.setAttribute('hidden', '');
-    beginLoading();
-    void loading.then(startGallery);
-    return;
-  }
 
   const intro = new Intro({
     canvas: introCanvas,

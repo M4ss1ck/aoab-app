@@ -129,6 +129,13 @@ All three read from `getScenes()`, which is what stops them drifting apart.
   the source image specifically to catch it.
 - **The shader's y axis points up.** Screen-space rectangles and focal points
   both need converting; see `focusToShaderSpace()` and the intro's art box.
+- **Parallax is deliberately tiny** (`PARALLAX_STRENGTH`, 0.012). Offsetting
+  texture coordinates by depth is a fake: nothing exists behind the subject, so
+  any pixel the foreground moves has to be invented by smearing its neighbours.
+  Past roughly 0.015 that smear shows up as tearing around hair and hands. The
+  depth map is also blurred with a five-tap kernel in the shader, because a hard
+  depth edge pulls neighbouring pixels in opposite directions and splits the
+  image along every silhouette.
 - **Rendering is on demand.** A full-screen fragment shader redrawn forever is
   the most expensive thing on the page and almost every frame is identical.
   Anything that changes what is on screen must extend the render deadline with

@@ -46,6 +46,7 @@ export const SCENE_FRAGMENT = /* glsl */ `
   uniform float uTime;
   uniform float uSeed;
   uniform float uParallax;
+  uniform float uParallaxScale;
   uniform float uGrainAmount;
   uniform float uAberration;
   uniform float uFade;
@@ -70,12 +71,22 @@ export const SCENE_FRAGMENT = /* glsl */ `
     vec2 extra
   ) {
     vec2 base = fitUv(uv, aspect, uViewAspect, focus, rest);
-    float depth = texture2D(depthTex, clamp(base, 0.0, 1.0)).r;
+
+    // Five-tap blur of the depth map. A hard depth edge means neighbouring
+    // pixels get pulled in opposite directions, which tears the image along
+    // every silhouette; softening the field spreads that over a gradient
+    // instead, so the displacement stays continuous.
+    float spread = 0.012;
+    float depth = texture2D(depthTex, clamp(base, 0.0, 1.0)).r * 0.4;
+    depth += texture2D(depthTex, clamp(base + vec2(spread, 0.0), 0.0, 1.0)).r * 0.15;
+    depth += texture2D(depthTex, clamp(base - vec2(spread, 0.0), 0.0, 1.0)).r * 0.15;
+    depth += texture2D(depthTex, clamp(base + vec2(0.0, spread), 0.0, 1.0)).r * 0.15;
+    depth += texture2D(depthTex, clamp(base - vec2(0.0, spread), 0.0, 1.0)).r * 0.15;
 
     // Near pixels move further than far ones, which is the whole illusion.
     // Biasing around 0.45 rather than 0.5 keeps the subject roughly anchored
     // while the background does most of the travelling.
-    vec2 shift = uPointer * uParallax * (depth - 0.45) * 0.055;
+    vec2 shift = uPointer * uParallax * (depth - 0.45) * uParallaxScale;
     vec2 finalUv = base + shift + extra;
 
     vec2 inside = step(vec2(0.0), finalUv) * step(finalUv, vec2(1.0));

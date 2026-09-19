@@ -7,6 +7,17 @@ import { hexToRgb, darken } from '../colour';
 
 const TRANSITION_INDEX = { parametric: 0, water: 1, starfield: 2 } as const;
 
+/**
+ * How far the parallax displaces the image, as a fraction of the texture.
+ *
+ * Deliberately small. Offsetting texture coordinates by depth is a fake: there
+ * is nothing behind the subject to reveal, so every pixel the foreground moves
+ * has to be invented by smearing its neighbours. Past roughly 0.015 that smear
+ * becomes visible as tearing around hair and hands, which is far worse than
+ * having no parallax at all. This reads as the image breathing, not as 3D.
+ */
+const PARALLAX_STRENGTH = 0.012;
+
 export interface GalleryRendererOptions {
   canvas: HTMLCanvasElement;
   scenes: Scene[];
@@ -107,8 +118,9 @@ export class GalleryRenderer {
         uTime: { value: 0 },
         uSeed: { value: 0 },
         uParallax: { value: reducedMotion ? 0 : 1 },
+        uParallaxScale: { value: PARALLAX_STRENGTH },
         uGrainAmount: { value: 0.022 },
-        uAberration: { value: reducedMotion ? 0 : 1 },
+        uAberration: { value: 0 },
         uFade: { value: 0 },
         uActive: { value: 0 },
       },
@@ -152,8 +164,15 @@ export class GalleryRenderer {
     this.pointerTarget.y = -((event.clientY / window.innerHeight) * 2 - 1);
   };
 
-  /** Snaps both layers to one scene with no transition. */
-  private applyScene(index: number): void {
+  /**
+   * Snaps both layers to one scene with no transition.
+   *
+   * `emit` exists because this also runs at the *end* of a transition, to
+   * settle the uniforms. The scene change was already announced when the
+   * transition started, and announcing it again replays the title animation
+   * and re-reads the scene to a screen reader.
+   */
+  private applyScene(index: number, emit = true): void {
     const scene = this.scenes[index];
     const textures = this.textures.get(scene.id);
     const uniforms = this.program.uniforms;
@@ -176,7 +195,7 @@ export class GalleryRenderer {
     this.keepRendering(0.3);
 
     this.current = index;
-    this.onSceneChange?.(index, scene);
+    if (emit) this.onSceneChange?.(index, scene);
   }
 
   /**
@@ -239,7 +258,8 @@ export class GalleryRenderer {
       },
     });
 
-    this.applyScene(target);
+    // Already announced when the transition began.
+    this.applyScene(target, false);
     this.textures.prefetch(this.neighbours(target));
     this.transitioning = false;
 
