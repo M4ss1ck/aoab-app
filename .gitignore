@@ -22,3 +22,11 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# asset pipeline (models + venv are machine-local; generated assets ARE committed)
+.venv-assets/
+.cache/
+
+# playwright
+test-results/
+playwright-report/

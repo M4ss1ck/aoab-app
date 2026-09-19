@@ -1,0 +1,80 @@
+---
+import { Picture } from 'astro:assets';
+import type { Scene } from '../lib/scenes';
+
+interface Props {
+  scenes: Scene[];
+  title: string;
+}
+
+const { scenes, title } = Astro.props;
+
+/**
+ * The gallery as it exists without WebGL, without JavaScript, and for anyone
+ * reading the page rather than looking at it.
+ *
+ * This is not a placeholder. It is server-rendered, uses the same upscaled
+ * artwork at full quality, and is the accessibility tree for the whole page -
+ * the canvas experience is aria-hidden, so this markup is what a screen reader
+ * actually reads. Keeping the two in sync is why both read from getScenes().
+ */
+const generated = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/generated/*.webp',
+  { eager: true },
+);
+
+const images = scenes.map((scene) => ({
+  scene,
+  image: generated[`/src/assets/generated/${scene.id}.webp`]?.default,
+}));
+---
+
+<section class="fallback__inner" aria-label={`${title}: artwork`}>
+  <header class="fallback__header">
+    <h2 class="fallback__title">{title}</h2>
+    <p class="fallback__lede">
+      {scenes.length} illustrations. Each one is shown below at full resolution.
+    </p>
+  </header>
+
+  <ol class="fallback__list">
+    {
+      images.map(({ scene, image }, index) => (
+        <li class="fallback__item" style={`--accent: ${scene.palette[0]}`}>
+          <figure class="fallback__figure">
+            {image && (
+              <Picture
+                src={image}
+                formats={['avif', 'webp']}
+                fallbackFormat="jpeg"
+                widths={[480, 800, 1200, 1800, 2400]}
+                sizes="(max-width: 700px) 100vw, (max-width: 1200px) 90vw, 1200px"
+                alt={`${scene.title}, illustration ${index + 1} of ${scenes.length}`}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                class="fallback__image"
+              />
+            )}
+            <figcaption class="fallback__caption">
+              <span class="fallback__index">{String(index + 1).padStart(2, '0')}</span>
+              <span class="fallback__name">{scene.title}</span>
+              {scene.credit && (
+                <span class="fallback__credit">
+                  Artwork by{' '}
+                  {scene.credit.url ? (
+                    <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
+                      {scene.credit.artist}
+                    </a>
+                  ) : (
+                    scene.credit.artist
+                  )}
+                  {scene.credit.license && <span> · {scene.credit.license}</span>}
+                </span>
+              )}
+            </figcaption>
+          </figure>
+        </li>
+      ))
+    }
+  </ol>
+</section>
