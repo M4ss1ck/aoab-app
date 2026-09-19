@@ -1,362 +1,864 @@
 @import 'tailwindcss';
 
-@plugin 'tailwindcss-animate';
+/**
+ * The display face, self-hosted.
+ *
+ * Relying on a system serif stack meant the wordmark rendered as Palatino on
+ * one machine and Georgia on another, which is not something a piece like this
+ * can leave to chance. Latin subset, one weight, ~37KB.
+ */
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/cormorant-garamond-300.woff2') format('woff2');
+  /* Latin only: everything on this page is English. */
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191,
+    U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
-@custom-variant dark (&:is(.dark *));
+/**
+ * The chrome over the canvas.
+ *
+ * Colour here is deliberately thin: --accent, --secondary and --backdrop are
+ * rewritten per scene from the pipeline-extracted palette, and everything else
+ * is fixed. Type never takes a palette colour directly - it takes --ink, which
+ * flips between two values chosen by measured luminance, so contrast holds no
+ * matter what the artwork does.
+ */
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --backdrop: #07080c;
+  --accent: #30378c;
+  --accent-soft: rgb(48 55 140 / 0.24);
+  --secondary: #e2c610;
 
-  --quantity: 10;
+  --ink-light: #f6f4ef;
+  --ink-dark: #14120f;
+  --ink: var(--ink-light);
+  --ink-dim: rgb(246 244 239 / 0.62);
 
-  /* Carousel tuning */
-  --carousel-perspective: 800px;
-  --carousel-tilt: -8deg;
-  --carousel-depth: 500px;
-  --carousel-depth-vw: 40vw;
-  --carousel-speed: 20s;
-  --carousel-w: 200px;
-  --carousel-h: 250px;
+  --font-display: 'Cormorant Garamond', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  /* The UI face is deliberately the system stack: it is only ever used at
+     small, letterspaced sizes where a webfont would be bytes for nothing. */
+  --font-ui: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --gutter: clamp(1rem, 4vw, 3.25rem);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+[data-ink='dark'] {
+  --ink: var(--ink-dark);
+  --ink-dim: rgb(20 18 15 / 0.66);
 }
 
-@theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-@layer utilities {
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+html {
+  background: var(--backdrop);
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100svh;
+  background: var(--backdrop);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Only lock scrolling once the canvas experience has actually taken over. The
+   fallback gallery is a normal scrolling document and must stay one. */
+html.is-enhanced,
+html.is-enhanced body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 100;
+  transform: translate(-50%, -120%);
+  padding: 0.75rem 1.25rem;
+  background: var(--ink);
+  color: var(--backdrop);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0 0 0.5rem 0.5rem;
+  transition: transform 0.2s var(--ease-out);
+}
+
+.skip-link:focus-visible {
+  transform: translate(-50%, 0);
+}
+
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---------------------------------------------------------------- stage -- */
+
+.experience {
+  position: relative;
+  width: 100%;
+  min-height: 100svh;
+  background: var(--backdrop);
+  transition: background 0.9s var(--ease-out);
+}
+
+.experience:focus {
+  outline: none;
+}
+
+.experience[data-mode='webgl'] {
+  height: 100svh;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.layer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.layer--gallery {
+  z-index: 1;
+}
+
+.layer--intro {
+  z-index: 3;
+}
+
+/* The canvas layers only exist once WebGL has started. */
+.experience[data-mode='fallback'] .layer,
+.experience[data-mode='fallback'] .chrome,
+.experience[data-mode='fallback'] .intro {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- intro -- */
+
+/**
+ * The intro is a poster. On landscape the hero holds the right of the frame
+ * and the lockup sits left; on portrait the hero takes the upper band and the
+ * type sits below it. The canvas paints the artwork into the matching
+ * rectangle, so the two halves are composed together rather than stacked on
+ * top of each other.
+ */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  pointer-events: none;
+}
+
+.intro[data-intro-layout='landscape'] {
+  grid-template-columns: 34% 1fr;
+  align-items: center;
+}
+
+.intro[data-intro-layout='landscape'] .intro__ui {
+  grid-column: 1;
+  justify-items: start;
+  text-align: left;
+  padding-inline-start: clamp(1.5rem, 5vw, 4.5rem);
+  padding-block-end: 0;
+}
+
+.intro[data-intro-layout='landscape'] .wordmark {
+  justify-items: start;
+  text-align: left;
+}
+
+.intro[data-intro-layout='portrait'] {
+  place-items: end center;
+}
+
+/* The paper the intro is drawn on. Painting it in CSS means the canvas has
+   nothing to render until the hero actually arrives. */
+.intro {
+  background: #f4f1ea;
+}
+
+.intro[hidden] {
+  display: none;
+}
+
+.intro__ui {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  justify-items: center;
+  gap: clamp(1rem, 3vh, 2rem);
+  padding-block-end: clamp(2rem, 8vh, 5rem);
+  pointer-events: auto;
+}
+
+.wordmark {
+  display: grid;
+  justify-items: center;
+  font-family: var(--font-display);
+  font-weight: 300;
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  color: var(--ink-dark);
+  text-align: center;
+}
+
+.wordmark__line {
+  display: block;
+  font-size: clamp(2.25rem, 9vw, 5.5rem);
+}
+
+.wordmark__line--small {
+  font-size: clamp(0.9rem, 2.4vw, 1.5rem);
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  opacity: 0.78;
+  padding-block: 0.35em;
+}
+
+.wordmark__mark {
+  display: none;
+}
+
+/* Once the lockup collapses it is no longer part of the poster grid. */
+.wordmark[data-state='mark'] {
+  justify-items: start;
+}
+
+/* Collapsed state: the lockup becomes a small persistent mark in the corner. */
+.wordmark[data-state='mark'] {
+  position: fixed;
+  top: var(--gutter);
+  left: var(--gutter);
+  color: var(--ink);
+  font-size: 0.95rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  z-index: 6;
+}
+
+.wordmark[data-state='mark'] .wordmark__line {
+  display: none;
+}
+
+.wordmark[data-state='mark'] .wordmark__mark {
+  display: block;
+  font-family: var(--font-ui);
+  font-weight: 500;
+}
+
+.intro__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--ink-dark);
+}
+
+.progress {
+  position: relative;
+  width: clamp(8rem, 28vw, 15rem);
+  height: 2px;
+  background: rgb(20 18 15 / 0.18);
+  overflow: hidden;
+}
+
+.progress__bar {
+  position: absolute;
+  inset: 0;
+  background: var(--ink-dark);
+  transform: scaleX(var(--progress, 0));
+  transform-origin: left center;
+  transition: transform 0.18s linear;
+}
+
+.progress__value {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.18em;
+  opacity: 0.65;
+}
+
+.intro__skip {
+  background: none;
+  border: 1px solid rgb(20 18 15 / 0.25);
+  color: var(--ink-dark);
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 0.6rem 1.35rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 0.25s var(--ease-out),
+    border-color 0.25s var(--ease-out);
+}
+
+.intro__skip:hover {
+  background: rgb(20 18 15 / 0.08);
+  border-color: rgb(20 18 15 / 0.45);
+}
+
+/* --------------------------------------------------------------- chrome -- */
+
+.chrome {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: var(--gutter);
+  padding-block-start: calc(var(--gutter) * 2.6);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s var(--ease-out);
+  isolation: isolate;
+}
+
+/**
+ * Scrims.
+ *
+ * The chrome sits over ten images that run from near-black to near-white, so
+ * legibility cannot depend on what the artwork happens to be doing under any
+ * given word. These two gradients guarantee it. They take the scene's own
+ * backdrop colour rather than neutral black, so they read as part of the
+ * picture instead of as a UI panel bolted on top.
+ */
+.chrome::before,
+.chrome::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 0.5s var(--ease-out);
+}
+
+.chrome::before {
+  top: 0;
+  height: min(46vh, 26rem);
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--backdrop-rgb, 7 8 12) / 0.82) 0%,
+    rgb(var(--backdrop-rgb, 7 8 12) / 0.52) 38%,
+    rgb(var(--backdrop-rgb, 7 8 12) / 0) 100%
+  );
+}
+
+.chrome::after {
+  bottom: 0;
+  height: min(32vh, 18rem);
+  background: linear-gradient(
+    to top,
+    rgb(var(--backdrop-rgb, 7 8 12) / 0.74) 0%,
+    rgb(var(--backdrop-rgb, 7 8 12) / 0.36) 45%,
+    rgb(var(--backdrop-rgb, 7 8 12) / 0) 100%
+  );
+}
+
+/* Detail mode is for looking at the picture, so the scrims go too. */
+.experience[data-detail='true'] .chrome::before,
+.experience[data-detail='true'] .chrome::after {
+  opacity: 0;
+}
+
+.experience[data-ready='true'] .chrome {
+  opacity: 1;
+}
+
+/* Detail mode clears everything but the artwork. */
+.experience[data-detail='true'] .chrome__head,
+.experience[data-detail='true'] .scene-credit,
+.experience[data-detail='true'] .rail {
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out);
+}
+
+.chrome__head {
+  grid-row: 1;
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  transition: opacity 0.4s var(--ease-out);
+}
+
+.scene-counter {
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.scene-title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2rem, 7vw, 4.75rem);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  overflow: hidden;
+  /* Each character animates from below its own line box. */
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.scene-title__char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.chrome__foot {
+  grid-row: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.scene-credit {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  pointer-events: auto;
+}
+
+.credit__label {
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.credit__name {
+  color: var(--ink);
+  text-decoration-color: var(--accent-soft);
+  text-underline-offset: 0.25em;
+}
+
+.credit__license {
+  opacity: 0.6;
+}
+
+.detail-hint {
+  font-size: 0.68rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* ----------------------------------------------------------------- rail -- */
+
+.rail {
+  position: fixed;
+  right: var(--gutter);
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  gap: 0.75rem;
+  pointer-events: auto;
+  transition: opacity 0.4s var(--ease-out);
+}
+
+.rail__dot {
+  width: 2px;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--ink);
+  opacity: 0.28;
+  cursor: pointer;
+  transition:
+    opacity 0.35s var(--ease-out),
+    height 0.35s var(--ease-out),
+    background 0.35s var(--ease-out);
+}
+
+/* The hit area is larger than the mark, so the rail is usable on touch
+   without drawing a 44px-wide bar down the side of the artwork. */
+.rail__dot::before {
+  content: '';
+  position: absolute;
+  inset-inline: -1.25rem;
+  block-size: 100%;
+}
+
+.rail__dot:hover {
+  opacity: 0.7;
+}
+
+.rail__dot.is-active {
+  opacity: 1;
+  height: 2.75rem;
+  background: var(--secondary);
+}
+
+/* --------------------------------------------------------------- finale -- */
+
+/**
+ * The closing composition. Sits above the canvas and takes the last scene's
+ * backdrop, so arriving here feels like the gallery resolving rather than a
+ * different page.
+ */
+.finale {
+  position: fixed;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: center;
+  gap: clamp(1.5rem, 4vh, 3rem);
+  padding: clamp(1.5rem, 5vh, 4rem) var(--gutter);
+  background: color-mix(in oklab, var(--backdrop) 88%, black);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.finale[hidden] {
+  display: none;
+}
+
+.finale__wall {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: clamp(0.35rem, 1vw, 0.75rem);
+  width: min(100%, 64rem);
+  margin-inline: auto;
+}
+
+.finale__tile {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: none;
+  background: color-mix(in oklab, var(--accent) 40%, var(--backdrop));
+  border-radius: 0.25rem;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 4 / 3;
+  will-change: transform, opacity;
+}
+
+.finale__tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition:
+    transform 0.5s var(--ease-out),
+    filter 0.5s var(--ease-out);
+  filter: saturate(0.85) brightness(0.82);
+}
+
+.finale__tile:hover img,
+.finale__tile:focus-visible img {
+  transform: scale(1.06);
+  filter: saturate(1.05) brightness(1);
+}
+
+.finale__tile-label {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.7rem;
+  text-align: left;
+  color: var(--ink-light);
+  background: linear-gradient(to top, rgb(0 0 0 / 0.75), transparent);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease-out);
+}
+
+.finale__tile:hover .finale__tile-label,
+.finale__tile:focus-visible .finale__tile-label {
+  opacity: 1;
+}
+
+.finale__panel {
+  width: min(100%, 64rem);
+  margin-inline: auto;
+  display: grid;
+  gap: 1rem;
+  color: var(--ink-light);
+}
+
+.finale__eyebrow {
+  font-size: 0.68rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.finale__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2rem, 6vw, 4rem);
+  line-height: 1;
+}
+
+.finale__credits {
+  font-size: 0.85rem;
+  opacity: 0.78;
+  max-width: 56ch;
+}
+
+.finale__credits-heading {
+  font-size: 0.68rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-block-end: 0.6rem;
+  opacity: 0.7;
+}
+
+.finale__credits-list {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+}
+
+.finale__credits-list li {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.finale__credits-piece {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 1rem;
+}
+
+.finale__credits-licence {
+  opacity: 0.6;
+}
+
+.finale__credits-none {
+  line-height: 1.6;
+}
+
+.finale__actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-block-start: 0.5rem;
+}
+
+.finale__button {
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--ink-light);
+  background: var(--ink-light);
+  color: var(--backdrop);
+  cursor: pointer;
+  transition:
+    background 0.25s var(--ease-out),
+    color 0.25s var(--ease-out);
+}
+
+.finale__button--quiet {
+  background: none;
+  color: var(--ink-light);
+  border-color: rgb(246 244 239 / 0.35);
+}
+
+.finale__button--quiet:hover {
+  border-color: var(--ink-light);
+}
+
+/* The chrome belongs to the gallery, not to the ending. */
+.experience[data-finale-open='true'] .chrome {
+  opacity: 0;
+}
+
+@media (max-width: 700px) {
+  .finale__wall {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ------------------------------------------------------------- fallback -- */
+
+.fallback {
+  position: relative;
+  z-index: 2;
+}
+
+/* Scripted documents hide the fallback up front rather than after boot, which
+   is what stops ten images being fetched and decoded on the way to a canvas
+   that will replace them. boot() removes the flag if WebGL cannot start. */
+html[data-js='true'] .fallback {
+  display: none;
+}
+
+.fallback[hidden] {
+  display: none;
+}
+
+.fallback__inner {
+  max-width: 78rem;
+  margin-inline: auto;
+  padding: clamp(3rem, 10vh, 7rem) var(--gutter) clamp(4rem, 12vh, 9rem);
+}
+
+.fallback__header {
+  display: grid;
+  gap: 0.75rem;
+  margin-block-end: clamp(2.5rem, 8vh, 5rem);
+}
+
+.fallback__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.25rem, 7vw, 4.5rem);
+  line-height: 1.02;
+}
+
+.fallback__lede {
+  color: var(--ink-dim);
+  max-width: 44ch;
+}
+
+.fallback__list {
+  display: grid;
+  gap: clamp(2.5rem, 8vh, 5.5rem);
+  list-style: none;
+}
+
+.fallback__figure {
+  display: grid;
+  gap: 1rem;
+}
+
+.fallback__image {
+  width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  /* Reserves the right box before the image arrives, which is what keeps CLS
+     at zero on this path. */
+  background: color-mix(in oklab, var(--accent) 35%, var(--backdrop));
+}
+
+.fallback__caption {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+/* The index takes ink, never the palette. An accent that happens to be dark
+   drops this to under 2:1, and a filter does not change what a contrast
+   checker - or a person - actually sees. The palette shows up as the rule
+   beside it instead, where it carries no information. */
+.fallback__index {
+  position: relative;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+  padding-inline-start: 1.4rem;
+}
+
+.fallback__index::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 0.85rem;
+  height: 2px;
+  transform: translateY(-50%);
+  background: var(--accent);
+  filter: brightness(1.8) saturate(1.2);
+}
+
+.fallback__name {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 1.25rem;
+  color: var(--ink);
+}
+
+.fallback__credit a {
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------- reduced motion -- */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Content is never removed here - only movement. The gallery still shows
+     every image, the chrome still retunes, transitions become cross-fades. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 
-  body {
-    background: linear-gradient(270deg, #6a11cb, #2575fc, #6a11cb);
-    background-size: 400% 100%;
-    -webkit-animation: gradientShift 15s ease infinite;
-            animation: gradientShift 15s ease infinite;
+  .experience,
+  .chrome,
+  .fallback__image {
+    transition: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .chrome {
+    padding-block-start: calc(var(--gutter) * 3.4);
   }
 
-  @-webkit-keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+  .rail {
+    right: calc(var(--gutter) * 0.5);
+    gap: 0.5rem;
   }
 
-  @keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-  
-  .banner {
-    width: 100%;
-    height: 100vh;
-    text-align: center;
-    overflow: hidden;
-    position: relative;
-  
-    isolation: isolate;
-  }
-  
-  .banner .slider {
-    position: absolute;
-    top: 10%;
-    left: calc(50% - var(--carousel-w) / 2);
-    width: var(--carousel-w);
-    height: var(--carousel-h);
-    overflow: visible;
-
-    transform-style: preserve-3d;
-    transform: perspective(var(--carousel-perspective));
-    -webkit-animation: autoRun var(--carousel-speed) linear infinite;
-            animation: autoRun var(--carousel-speed) linear infinite;
-    z-index: 2;
-
-    -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
+  .rail__dot {
+    height: 1rem;
   }
 
-  .banner .slider:hover {
-    -webkit-animation-play-state: paused;
-            animation-play-state: paused;
+  .rail__dot.is-active {
+    height: 2rem;
   }
 
-  @-webkit-keyframes autoRun {
-    from {
-      transform: perspective(var(--carousel-perspective)) rotateX(var(--carousel-tilt)) rotateY(0deg);
-    } to {
-      transform: perspective(var(--carousel-perspective)) rotateX(var(--carousel-tilt)) rotateY(360deg);
-    }
-  }
-
-  @keyframes autoRun {
-    from {
-      transform: perspective(var(--carousel-perspective)) rotateX(var(--carousel-tilt)) rotateY(0deg);
-    } to {
-      transform: perspective(var(--carousel-perspective)) rotateX(var(--carousel-tilt)) rotateY(360deg);
-    }
-  }
-  
-  .banner .slider .item {
-    position: absolute;
-    inset: 0 0 0 0;
-    transform:
-      rotateY(calc((var(--position) - 1) * (360 / var(--quantity)) * 1deg))
-      translateZ(min(var(--carousel-depth-vw), var(--carousel-depth)));
-  }
-  
-  .banner .slider .item img {
-    width: 100%;
-    height: 100%;
-    -o-object-fit: cover;
-        object-fit: cover;
-    border-radius: 4px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    -webkit-box-reflect: below 8px linear-gradient(transparent 60%, rgba(255, 255, 255, 0.15));
-  }
-
-  .banner .slider .item img:hover {
-    transform: scale(1.08);
-    box-shadow: 0 0 20px rgba(106, 17, 203, 0.5), 0 0 40px rgba(37, 117, 252, 0.3);
-  }
-  .banner .content{
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(1400px, 100vw);
-      height: -webkit-max-content;
-      height: -moz-max-content;
-      height: max-content;
-      padding-bottom: 100px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 1;
-      -webkit-animation: contentEntrance 1.2s ease-out both;
-              animation: contentEntrance 1.2s ease-out both;
-  }
-
-  @-webkit-keyframes contentEntrance {
-      from {
-          opacity: 0;
-          transform: translateX(-50%) translateY(40px);
-      }
-      to {
-          opacity: 1;
-          transform: translateX(-50%) translateY(0);
-      }
-  }
-
-  @keyframes contentEntrance {
-      from {
-          opacity: 0;
-          transform: translateX(-50%) translateY(40px);
-      }
-      to {
-          opacity: 1;
-          transform: translateX(-50%) translateY(0);
-      }
-  }
-
-  .banner .content h1{
-      font-family: 'ICA Rubrik';
-      font-size: 16em;
-      line-height: 1em;
-      position: relative;
-      background: linear-gradient(90deg, #25283B, #6a11cb, #2575fc, #25283B);
-      background-size: 300% 100%;
-      -webkit-background-clip: text;
-              background-clip: text;
-      -webkit-text-fill-color: transparent;
-      -webkit-animation: textGradient 8s ease infinite;
-              animation: textGradient 8s ease infinite;
-  }
-
-  @-webkit-keyframes textGradient {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-  }
-
-  @keyframes textGradient {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-  }
-
-  .banner .content h1::after{
-      position: absolute;
-      inset: 0 0 0 0;
-      content: attr(data-content);
-      z-index: 2;
-      -webkit-text-stroke: 2px #d2d2d2;
-      color: transparent;
-      -webkit-animation: strokeShimmer 6s ease infinite;
-              animation: strokeShimmer 6s ease infinite;
-  }
-
-  @-webkit-keyframes strokeShimmer {
-      0%, 100% { -webkit-text-stroke-color: rgba(210, 210, 210, 0.6); }
-      50% { -webkit-text-stroke-color: rgba(255, 255, 255, 0.95); }
-  }
-
-  @keyframes strokeShimmer {
-      0%, 100% { -webkit-text-stroke-color: rgba(210, 210, 210, 0.6); }
-      50% { -webkit-text-stroke-color: rgba(255, 255, 255, 0.95); }
-  }
-  .banner .content .author{
-      font-family: Poppins;
-      text-align: right;
-      max-width: 200px;
-  }
-  .banner .content h2{
-      font-size: 3em;
-  }
-  .banner .content .model{
-      background-image: url(/assets/myne.png);
-      width: 100%;
-      height: 75vh;
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      background-size: auto 130%;
-      background-repeat: no-repeat;
-      background-position: top center;
-      z-index: 1;
-  }
-  @media screen and (max-width: 1023px) {
-      :root {
-          --carousel-w: 160px;
-          --carousel-h: 200px;
-          --carousel-depth: 320px;
-      }
-      .banner .content h1{
-          text-align: center;
-          width: 100%;
-          text-shadow: 0 10px 20px #000;
-          font-size: 7em;
-      }
-      .banner .content .author{
-          color: #fff;
-          padding: 20px;
-          text-shadow: 0 10px 20px #000;
-          z-index: 2;
-          max-width: unset;
-          width: 100%;
-          text-align: center;
-          padding: 0 30px;
-      }
-  }
-  @media screen and (max-width: 767px) {
-      :root {
-          --carousel-w: 100px;
-          --carousel-h: 150px;
-          --carousel-depth: 280px;
-      }
-      .banner .content h1{
-          font-size: 5em;
-      }
+  .chrome__foot {
+    padding-block-end: env(safe-area-inset-bottom, 0);
   }
 }

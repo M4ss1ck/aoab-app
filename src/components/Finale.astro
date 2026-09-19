@@ -1,0 +1,113 @@
+---
+import { Image } from 'astro:assets';
+import type { Scene } from '../lib/scenes';
+
+interface Props {
+  scenes: Scene[];
+  title: string;
+}
+
+const { scenes, title } = Astro.props;
+
+const generated = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/generated/*.webp',
+  { eager: true },
+);
+
+/**
+ * The ending.
+ *
+ * An endless loop has no payoff, so the sequence resolves here: the ten pieces
+ * reassemble as a single wall, the wordmark returns at full size, and the
+ * credits get a real surface instead of a footnote.
+ *
+ * Built in the DOM rather than on the canvas on purpose. The credits are text
+ * that wants to be selectable, linkable and readable by a screen reader, and
+ * the thumbnails are small enough that DOM compositing is not the bottleneck.
+ */
+const tiles = scenes.map((scene) => ({
+  scene,
+  image: generated[`/src/assets/generated/${scene.id}.webp`]?.default,
+}));
+
+const credited = scenes.filter((scene) => scene.credit);
+---
+
+<section class="finale" data-finale hidden aria-label="The complete gallery">
+  <div class="finale__wall" data-finale-wall aria-hidden="true">
+    {
+      tiles.map(({ scene, image }, index) => (
+        <button
+          class="finale__tile"
+          type="button"
+          data-finale-tile
+          data-index={index}
+          style={`--accent: ${scene.palette[0]}`}
+          aria-label={`Return to ${scene.title}`}
+          tabindex="-1"
+        >
+          {image && (
+            <Image
+              src={image}
+              width={420}
+              densities={[1, 2]}
+              format="webp"
+              quality={78}
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+          <span class="finale__tile-label">{scene.title}</span>
+        </button>
+      ))
+    }
+  </div>
+
+  <div class="finale__panel">
+    <p class="finale__eyebrow">The end of the sequence</p>
+    <h2 class="finale__title">{title}</h2>
+
+    <div class="finale__credits">
+      {
+        credited.length > 0 ? (
+          <>
+            <h3 class="finale__credits-heading">Artwork</h3>
+            <ul class="finale__credits-list">
+              {credited.map((scene) => (
+                <li>
+                  <span class="finale__credits-piece">{scene.title}</span>
+                  {scene.credit?.url ? (
+                    <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
+                      {scene.credit.artist}
+                    </a>
+                  ) : (
+                    <span>{scene.credit?.artist}</span>
+                  )}
+                  {scene.credit?.license && (
+                    <span class="finale__credits-licence">{scene.credit.license}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p class="finale__credits-none">
+            These pieces are Creative Commons works whose original artists we have not been
+            able to trace. If one of them is yours, or you know who made it, we would like to
+            credit you properly.
+          </p>
+        )
+      }
+    </div>
+
+    <div class="finale__actions">
+      <button class="finale__button" type="button" data-finale-replay>
+        Watch it again
+      </button>
+      <button class="finale__button finale__button--quiet" type="button" data-finale-back>
+        Back to the last piece
+      </button>
+    </div>
+  </div>
+</section>

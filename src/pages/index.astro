@@ -1,54 +1,203 @@
 ---
-import "../styles/global.css";
+import '../styles/global.css';
+import { getScenes, getHero, TEXTURE_TIERS } from '../lib/scenes';
+import FallbackGallery from '../components/FallbackGallery.astro';
+import Finale from '../components/Finale.astro';
+
+const scenes = await getScenes();
+const hero = await getHero();
+
+const title = 'Ascendance of a Bookworm';
+const description =
+  'An illustrated gallery for Ascendance of a Bookworm: ten pieces of fan artwork, rendered with depth, and composed as one continuous experience.';
+
+// Only what the client genuinely needs. The Astro-side objects carry a few
+// build-time fields (intrinsic sizes, source filenames) that the runtime never
+// reads, and shipping them would bloat the inline payload for nothing.
+const bootScenes = scenes.map((scene) => ({
+  id: scene.id,
+  index: scene.index,
+  title: scene.title,
+  credit: scene.credit,
+  aspect: scene.aspect,
+  palette: scene.palette,
+  focus: scene.focus,
+  lqip: scene.lqip,
+  transition: scene.transition,
+  tiers: scene.tiers,
+  depthUrl: scene.depthUrl,
+}));
+
+const boot = {
+  scenes: bootScenes,
+  tiers: [...TEXTURE_TIERS],
+  hero: {
+    artTiers: hero.artTiers,
+    artUrl: hero.artUrl,
+    edgeUrl: hero.edgeUrl,
+    aspect: hero.aspect,
+    palette: hero.palette,
+  },
+};
 ---
 
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- The wordmark is the first thing anyone sees, so its face is fetched
+         alongside the stylesheet rather than after it. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/cormorant-garamond-300.woff2"
+      crossorigin
+    />
     <meta name="generator" content={Astro.generator} />
-    <title>AoaB</title>
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+
+    <!-- Marks the document as scripted before anything paints, so the
+         fallback gallery never starts fetching or decoding its ten images on
+         a page that is about to replace it with the canvas experience. If the
+         enhanced path cannot start, boot() clears this and the fallback comes
+         back. -->
+    <script is:inline define:vars={{ heroTiers: hero.artTiers, heroFallback: hero.artUrl, heroAspect: hero.aspect }}>
+      document.documentElement.dataset.js = 'true';
+
+      // Choose the hero rendition here, once, and preload exactly that file.
+      // A responsive preload plus a separate runtime choice is a good way to
+      // download the same picture twice.
+      (function () {
+        var widths = Object.keys(heroTiers)
+          .map(Number)
+          .sort(function (a, b) {
+            return a - b;
+          });
+        // Size by how big the hero is actually drawn, not by the viewport.
+        // It is contained inside a band of the page, so on a tall phone the
+        // rendered width is roughly the viewport width - sizing off the
+        // diagonal would fetch a rendition nearly twice as wide as needed.
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var portrait = vw / vh < 1.05;
+        var boxW = portrait ? vw : vw * 0.66;
+        var boxH = portrait ? vh * 0.6 : vh * 0.96;
+        var drawnWidth = Math.min(boxW, boxH * heroAspect);
+
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var wanted = drawnWidth * dpr;
+        var chosen = widths.find(function (w) {
+          return w >= wanted;
+        });
+        var url = heroTiers[chosen === undefined ? widths[widths.length - 1] : chosen] || heroFallback;
+
+        window.__heroUrl = url;
+
+        var link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = url;
+        link.fetchPriority = 'high';
+        document.head.appendChild(link);
+      })();
+    </script>
+
+
   </head>
 
   <body>
-    <div class="banner">
-      <div class="slider" style="--quantity: 10">
-        <div class="item" style="--position: 1">
-          <img src="assets/gallery/01.jpg" alt="" />
-        </div>
-        <div class="item" style="--position: 2">
-          <img src="assets/gallery/02.png" alt="" />
-        </div>
-        <div class="item" style="--position: 3">
-          <img src="assets/gallery/03.jpeg" alt="" />
-        </div>
-        <div class="item" style="--position: 4">
-          <img src="assets/gallery/04.jpeg" alt="" />
-        </div>
-        <div class="item" style="--position: 5">
-          <img src="assets/gallery/05.jpeg" alt="" />
-        </div>
-        <div class="item" style="--position: 6">
-          <img src="assets/gallery/06.jpg" alt="" />
-        </div>
-        <div class="item" style="--position: 7">
-          <img src="assets/gallery/07.jpg" alt="" />
-        </div>
-        <div class="item" style="--position: 8">
-          <img src="assets/gallery/08.jpg" alt="" />
-        </div>
-        <div class="item" style="--position: 9">
-          <img src="assets/gallery/09.jpg" alt="" />
-        </div>
-        <div class="item" style="--position: 10">
-          <img src="assets/gallery/10.jpg" alt="" />
+    <a class="skip-link" href="#gallery">Skip to the gallery</a>
+
+    <main
+      id="gallery"
+      class="experience"
+      data-experience
+      data-mode="fallback"
+      data-ready="false"
+      data-detail="false"
+      data-ink="light"
+      tabindex="-1"
+      aria-label={`${title}: illustrated gallery`}
+    >
+      <!-- Canvas layers. Both are decorative: everything they show is also in
+           the DOM as text or as the fallback gallery. -->
+      <canvas class="layer layer--gallery" data-gallery-canvas aria-hidden="true"></canvas>
+
+      <div class="intro" data-intro>
+        <canvas class="layer layer--intro" data-intro-canvas aria-hidden="true"></canvas>
+
+        <div class="intro__ui">
+          <h1 class="wordmark" data-wordmark data-state="lockup">
+            <span class="wordmark__line">Ascendance</span>
+            <span class="wordmark__line wordmark__line--small">of a</span>
+            <span class="wordmark__line">Bookworm</span>
+            <span class="wordmark__mark" aria-hidden="true">AoaB</span>
+          </h1>
+
+          <div class="intro__meta">
+            <div
+              class="progress"
+              data-intro-progress
+              role="progressbar"
+              aria-label="Loading artwork"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            >
+              <span class="progress__bar"></span>
+            </div>
+            <span class="progress__value" data-intro-progress-value aria-hidden="true">000</span>
+          </div>
+
+          <button class="intro__skip" type="button" data-intro-skip>Skip intro</button>
         </div>
       </div>
-      <div class="content">
-        <h1 data-content="AOAB">AOAB</h1>
-        <div class="model"></div>
+
+      <!-- Scene chrome. Hidden until the intro hands over. -->
+      <div class="chrome" aria-hidden="false">
+        <div class="chrome__head">
+          <p class="scene-counter" data-scene-counter>01 / {scenes.length}</p>
+          <h2 class="scene-title" data-scene-title>{scenes[0]?.title}</h2>
+        </div>
+
+        <div class="chrome__foot">
+          <p class="scene-credit" data-scene-credit hidden></p>
+          <p class="detail-hint" data-detail-hint>Press F for detail</p>
+        </div>
+
+        <nav class="rail" data-rail aria-label="Gallery scenes"></nav>
       </div>
-    </div>
+
+      <Finale scenes={scenes} title={title} />
+
+      <p class="visually-hidden" data-announcer role="status" aria-live="polite"></p>
+
+      <!-- Server-rendered, works with no JavaScript and no WebGL. Replaced by
+           the canvas experience only once that has successfully started. -->
+      <div class="fallback" data-fallback>
+        <FallbackGallery scenes={scenes} title={title} />
+      </div>
+    </main>
+
+    <!-- Scene data as inert JSON rather than an inline module, so the payload
+         is not re-parsed as JavaScript and stays out of the bundle. -->
+    <script is:inline type="application/json" id="boot-data" set:html={JSON.stringify(boot)} />
+
+    <script>
+      import { boot } from '../lib/main';
+
+      const payload = document.getElementById('boot-data');
+      if (payload?.textContent) {
+        boot(JSON.parse(payload.textContent));
+      }
+    </script>
   </body>
 </html>
