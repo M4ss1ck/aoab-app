@@ -87,7 +87,7 @@ export class Chrome {
     // animation below is meaningless to them.
     this.elements.announcer.textContent = `Scene ${index + 1} of ${this.scenes.length}. ${
       scene.title
-    }, ${scene.credit ? `by ${scene.credit.artist}` : 'artist untraced'}.`;
+    }, ${scene.credit?.artist ? `by ${scene.credit.artist}` : 'artist untraced'}.`;
   }
 
   private setTitle(title: string): void {
@@ -134,16 +134,33 @@ export class Chrome {
     // as fully attributed while it is not - but only while that distinguishes
     // this piece from the others. When nothing at all has been traced, the note
     // in the finale and the fallback makes the statement once instead.
-    if (!scene.credit) {
-      if (!creditSummary(this.scenes).labelPerItem) {
+    if (!scene.credit?.artist) {
+      const source = scene.credit?.url ?? null;
+      if (!creditSummary(this.scenes).labelPerItem && !source) {
         element.hidden = true;
         return;
       }
 
-      const unknown = document.createElement('span');
-      unknown.className = 'credit__name credit__name--unknown';
-      unknown.textContent = 'Artist untraced';
-      element.append(label, unknown);
+      const parts: HTMLElement[] = [label];
+      if (creditSummary(this.scenes).labelPerItem) {
+        const unknown = document.createElement('span');
+        unknown.className = 'credit__name credit__name--unknown';
+        unknown.textContent = 'Artist untraced';
+        parts.push(unknown);
+      }
+
+      // No name, but the trail we followed is still worth showing.
+      if (source) {
+        const link = document.createElement('a');
+        link.className = 'credit__name';
+        link.textContent = 'Source';
+        link.href = source;
+        link.rel = 'noopener noreferrer';
+        link.target = '_blank';
+        parts.push(link);
+      }
+
+      element.append(...parts);
       this.revealCredit(element);
       return;
     }

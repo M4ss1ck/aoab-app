@@ -84,21 +84,27 @@ const gap = untracedSentence(untraced, total);
         {credited.map((scene) => (
           <li>
             <span class="finale__credits-piece">{scene.title}</span>
-            {scene.credit ? (
+            {scene.credit?.artist ? (
+              scene.credit.url ? (
+                <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
+                  {scene.credit.artist}
+                </a>
+              ) : (
+                <span>{scene.credit.artist}</span>
+              )
+            ) : (
               <>
-                {scene.credit.url ? (
+                {labelPerItem && <span class="finale__credits-unknown">Artist untraced</span>}
+                {/* No name, but we can still show the trail we followed. */}
+                {scene.credit?.url && (
                   <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
-                    {scene.credit.artist}
+                    Source
                   </a>
-                ) : (
-                  <span>{scene.credit.artist}</span>
-                )}
-                {scene.credit.license && (
-                  <span class="finale__credits-licence">{scene.credit.license}</span>
                 )}
               </>
-            ) : (
-              labelPerItem && <span class="finale__credits-unknown">Artist untraced</span>
+            )}
+            {scene.credit?.license && (
+              <span class="finale__credits-licence">{scene.credit.license}</span>
             )}
           </li>
         ))}

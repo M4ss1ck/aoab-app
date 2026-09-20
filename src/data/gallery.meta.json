@@ -1,15 +1,15 @@
 {
   "_comment": "Optional overrides. Images with no entry still work - everything is derived. Add a `credit` block for any new artwork whose artist is known. Ordering below sets the colour/energy arc: cool and quiet, into warmth, down into night, out into the stars.",
 
-  "07": { "title": "Stillwater", "order": 10 },
+  "07": { "title": "Stillwater", "order": 10, "credit": { "artist": "modokikuma", "url": "https://www.pixiv.net/artworks/94724348" } },
   "01": { "title": "Held", "order": 20, "transition": "water", "credit": { "artist": "yuuko24", "url": "https://www.pixiv.net/artworks/96914263" } },
-  "08": { "title": "Bloomfall", "order": 30 },
-  "03": { "title": "The Gilded Arch", "order": 40 },
+  "08": { "title": "Bloomfall", "order": 30, "credit": { "artist": "トカヒ", "url": "https://wall.alphacoders.com/big.php?i=1232262" } },
+  "03": { "title": "The Gilded Arch", "order": 40, "credit": { "url": "https://wall.alphacoders.com/big.php?i=1223664" } },
   "10": { "title": "Procession", "order": 50, "credit": { "artist": "ino", "url": "https://www.pixiv.net/artworks/78709507" } },
-  "05": { "title": "Emberwood", "order": 60 },
-  "02": { "title": "Ashlight", "order": 70 },
+  "05": { "title": "Emberwood", "order": 60, "credit": { "url": "https://wallpaper.mob.org/pc/image/anime-ascendance_of_a_bookworm-myne_ascendance_of_a_bookworm-1073862.html" } },
+  "02": { "title": "Ashlight", "order": 70, "credit": { "artist": "つばめ", "url": "https://wall.alphacoders.com/big.php?i=1223670" } },
   "04": { "title": "Ascent", "order": 80, "credit": { "artist": "ado002", "url": "https://www.pixiv.net/artworks/81401409" } },
-  "09": { "title": "Nightwisteria", "order": 90 },
+  "09": { "title": "Nightwisteria", "order": 90, "credit": { "artist": "パンダがパンダでパンダなのだ", "url": "https://wall.alphacoders.com/big.php?i=1223686" } },
   "06": { "title": "Ascendance", "order": 100, "transition": "starfield", "credit": { "artist": "genya", "url": "https://www.pixiv.net/artworks/98353878" } },
   "myne": { "title": "Myne", "credit": { "artist": "genya", "url": "https://www.pixiv.net/artworks/98353878" } }
 }

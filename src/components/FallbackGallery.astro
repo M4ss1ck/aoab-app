@@ -68,7 +68,7 @@ const gap = untracedSentence(untraced, total);
               <span class="fallback__name">{scene.title}</span>
               {(scene.credit || labelPerItem) && (
                 <span class="fallback__credit">
-                  {scene.credit ? (
+                  {scene.credit?.artist ? (
                     <>
                       Artwork by{' '}
                       {scene.credit.url ? (
@@ -78,11 +78,23 @@ const gap = untracedSentence(untraced, total);
                       ) : (
                         scene.credit.artist
                       )}
-                      {scene.credit.license && <span> · {scene.credit.license}</span>}
                     </>
                   ) : (
-                    <span class="fallback__credit--unknown">Artist untraced</span>
+                    <>
+                      {labelPerItem && (
+                        <span class="fallback__credit--unknown">Artist untraced</span>
+                      )}
+                      {scene.credit?.url && (
+                        <>
+                          {labelPerItem && ' · '}
+                          <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
+                            Source
+                          </a>
+                        </>
+                      )}
+                    </>
                   )}
+                  {scene.credit?.license && <span> · {scene.credit.license}</span>}
                 </span>
               )}
             </figcaption>

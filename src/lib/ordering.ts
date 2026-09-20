@@ -12,7 +12,8 @@ export const HERO_ID = 'myne';
 export type TransitionKind = 'parametric' | 'water' | 'starfield';
 
 export interface Credit {
-  artist: string;
+  /** Absent when we know where a piece came from but not who drew it. */
+  artist?: string;
   url?: string;
   license?: string;
 }
@@ -62,12 +63,15 @@ export function orderImages<T extends { id: string }>(
  *
  * Nothing is concealed either way: the note states the count in prose.
  */
-export function creditSummary(scenes: Array<{ credit?: unknown }>): {
+export function creditSummary(scenes: Array<{ credit?: { artist?: string } | null }>): {
   untraced: number;
   total: number;
   labelPerItem: boolean;
 } {
-  const untraced = scenes.filter((scene) => !scene.credit).length;
+  // Untraced means "no artist", not "no credit". A piece with a source link
+  // and no name is still a piece we cannot attribute, and saying otherwise
+  // would be the same lie in a smaller font.
+  const untraced = scenes.filter((scene) => !scene.credit?.artist).length;
   return {
     untraced,
     total: scenes.length,

@@ -89,29 +89,48 @@ All eleven were re-saved through a phone gallery app in one five-minute session
 Only `04.jpeg` still names a tool, `Celsys Studio Tool`. So the artists have to
 be traced by reverse image search.
 
-Until they are, the site states the gap rather than leaving a blank. The closing
-credits list every piece, traced or not, and both the credits and the fallback
-gallery carry a note naming the rights holders and saying in prose how many
-pieces are still untraced. A piece with no artist is labelled *Artist untraced*
-beside the artwork - but only while some pieces *are* traced, because ten
-identical labels repeat the note underneath them and say nothing one row at a
-time. The rule lives in `creditSummary` and `untracedSentence`
-(`src/lib/ordering.ts`) so all three surfaces make the same statement.
+All eleven now carry a credit. Nine name an artist; two (`03`, `05`) name only
+where the piece was found, because the wallpaper sites hosting them do not say
+who drew them. `credit.artist` is optional for exactly that reason - knowing the
+source and knowing the artist are two different facts, and a credit with only a
+`url` still shows the trail and invites a correction. A credit that asserts
+neither fails the schema.
 
-To trace them, build the provenance sheet:
+A piece with no artist is labelled *Artist untraced* beside a **Source** link,
+and both the closing credits and the fallback gallery carry a note naming the
+rights holders and saying in prose how many pieces are still unattributed. The
+rule lives in `creditSummary` and `untracedSentence` (`src/lib/ordering.ts`) so
+all three render paths make the same statement.
+
+To trace a new piece, two tools, in order of effort.
+
+`scripts/provenance/trace.py` does it without a browser. The artwork here is
+mostly crops, and a crop defeats the global perceptual hashes IQDB and SauceNAO
+match on - but the corpus is one Danbooru tag with under a thousand posts, and
+that API is open. So it pulls the haystack down once and matches locally, where
+a crop is easy:
+
+```sh
+python3 scripts/provenance/trace.py fetch     # post metadata
+python3 scripts/provenance/trace.py download  # candidate images, resumable
+python3 scripts/provenance/trace.py match     # ORB + RANSAC, local
+```
+
+`TRACE_MIN_INLIERS` defaults to 80 and that number is measured, not chosen: on
+this corpus real matches scored 782-2410 inliers and false positives 12-25. It
+found five of the eleven. **Confirm every hit by eye before writing it down** -
+at a threshold of 12 the matcher confidently named four wrong artists.
+
+`scripts/provenance/build-sheet.mjs` covers what the matcher cannot, which is
+anything outside the Danbooru corpus. It builds a page with each source image
+beside pre-aimed Google Lens, SauceNAO, ascii2d and TinEye links, and one button
+that emits the whole `gallery.meta.json` with your answers merged in, in the
+file's own key order and formatting - so a pass that traced nothing leaves a
+zero-line diff:
 
 ```sh
 node scripts/provenance/build-sheet.mjs /tmp/provenance.html
 ```
-
-Open it in a browser. Each source image sits next to a pre-aimed Google Lens,
-SauceNAO, ascii2d and TinEye link; drag the artwork into the search box, or save
-it and upload. Fill in the artist, the source URL and how permission stands. The
-sheet remembers your answers between sittings, and **Copy gallery.meta.json**
-gives you the whole file with the credits merged in, in the file's own key order
-and formatting - so a pass that traced nothing leaves a zero-line diff, and
-every line that does change is a credit somebody actually found. Paste it over
-`src/data/gallery.meta.json`.
 
 Before the site goes public, set `CONTACT_EMAIL` in `src/lib/site.ts`. It is
 `null` by default and the takedown sentence is omitted while it stays that way,

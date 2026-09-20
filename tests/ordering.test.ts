@@ -120,6 +120,26 @@ describe('creditSummary', () => {
   it('handles an empty gallery without claiming a gap', () => {
     expect(creditSummary([])).toEqual({ untraced: 0, total: 0, labelPerItem: false });
   });
+
+  it('counts a source-only credit as untraced', () => {
+    // Knowing where a piece came from is not knowing who drew it, and a
+    // summary that conflated the two would under-report the gap.
+    const sourceOnly = { credit: { url: 'https://example.com/where-we-found-it' } };
+
+    expect(creditSummary([traced, sourceOnly])).toEqual({
+      untraced: 1,
+      total: 2,
+      labelPerItem: true,
+    });
+  });
+
+  it('treats an empty artist string as untraced', () => {
+    expect(creditSummary([{ credit: { artist: '' } }])).toEqual({
+      untraced: 1,
+      total: 1,
+      labelPerItem: false,
+    });
+  });
 });
 
 describe('untracedSentence', () => {
