@@ -1,6 +1,8 @@
 ---
 import { Picture } from 'astro:assets';
 import type { Scene } from '../lib/scenes';
+import { CONTACT_EMAIL, SOURCE_WORK } from '../lib/site';
+import { creditSummary, untracedSentence } from '../lib/ordering';
 
 interface Props {
   scenes: Scene[];
@@ -27,6 +29,12 @@ const images = scenes.map((scene) => ({
   scene,
   image: generated[`/src/assets/generated/${scene.id}.webp`]?.default,
 }));
+
+// The same rule the finale uses, for the same reason: this is the markup a
+// screen reader and a crawler actually read, so it has to make the same
+// statement about provenance that the canvas experience does.
+const { untraced, total, labelPerItem } = creditSummary(scenes);
+const gap = untracedSentence(untraced, total);
 ---
 
 <section class="fallback__inner" aria-label={`${title}: artwork`}>
@@ -58,17 +66,35 @@ const images = scenes.map((scene) => ({
             <figcaption class="fallback__caption">
               <span class="fallback__index">{String(index + 1).padStart(2, '0')}</span>
               <span class="fallback__name">{scene.title}</span>
-              {scene.credit && (
+              {(scene.credit || labelPerItem) && (
                 <span class="fallback__credit">
-                  Artwork by{' '}
-                  {scene.credit.url ? (
-                    <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
-                      {scene.credit.artist}
-                    </a>
+                  {scene.credit?.artist ? (
+                    <>
+                      Artwork by{' '}
+                      {scene.credit.url ? (
+                        <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
+                          {scene.credit.artist}
+                        </a>
+                      ) : (
+                        scene.credit.artist
+                      )}
+                    </>
                   ) : (
-                    scene.credit.artist
+                    <>
+                      {labelPerItem && (
+                        <span class="fallback__credit--unknown">Artist untraced</span>
+                      )}
+                      {scene.credit?.url && (
+                        <>
+                          {labelPerItem && ' · '}
+                          <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
+                            Source
+                          </a>
+                        </>
+                      )}
+                    </>
                   )}
-                  {scene.credit.license && <span> · {scene.credit.license}</span>}
+                  {scene.credit?.license && <span> · {scene.credit.license}</span>}
                 </span>
               )}
             </figcaption>
@@ -77,4 +103,26 @@ const images = scenes.map((scene) => ({
       ))
     }
   </ol>
+
+  <footer class="fallback__note">
+    <p>
+      Fan artwork for <em>{SOURCE_WORK.title}</em>, reproduced here out of admiration for it.
+      The series is {SOURCE_WORK.author}’s, illustrated by {SOURCE_WORK.illustrator} and
+      published by {SOURCE_WORK.publisher}; this site is not affiliated with any of them. Each
+      piece belongs to whoever drew it.
+      {gap && (
+        <>
+          {' '}
+          {gap} If one of them is yours, or you know who made it, we want to credit you properly.
+        </>
+      )}
+      {CONTACT_EMAIL && (
+        <>
+          {' '}
+          To be credited differently, or taken down, write to{' '}
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+        </>
+      )}
+    </p>
+  </footer>
 </section>

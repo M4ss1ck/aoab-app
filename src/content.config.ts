@@ -23,12 +23,24 @@ const gallery = defineCollection({
       id: z.string().optional(),
       /** Shown as the scene title. Falls back to the image id. */
       title: z.string().optional(),
-      /** Displayed with the artwork and in the end credits. */
+      /**
+       * Displayed with the artwork and in the end credits.
+       *
+       * `artist` is optional because knowing where a piece came from and
+       * knowing who drew it are two different facts, and we often have the
+       * first without the second. A credit with only a `url` still earns its
+       * place: it shows the reader the trail, and it is the fastest way for
+       * whoever recognises the work to tell us the name. The refine is what
+       * stops an entry that asserts neither.
+       */
       credit: z
         .object({
-          artist: z.string(),
+          artist: z.string().min(1).optional(),
           url: z.string().url().optional(),
           license: z.string().optional(),
+        })
+        .refine((credit) => credit.artist || credit.url, {
+          message: 'a credit needs an artist, a url, or both',
         })
         .optional(),
       /** Overrides the automatic colour-arc position. Lower sorts earlier. */

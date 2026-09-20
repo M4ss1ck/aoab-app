@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import type { Scene } from './scenes';
 import { hexToRgb, rgbToCss, darken, inkFor } from './colour';
+import { creditSummary } from './ordering';
 
 /**
  * The DOM layer over the canvas: titles, credits, the scene rail, and the
@@ -86,7 +87,7 @@ export class Chrome {
     // animation below is meaningless to them.
     this.elements.announcer.textContent = `Scene ${index + 1} of ${this.scenes.length}. ${
       scene.title
-    }${scene.credit ? `, by ${scene.credit.artist}` : ''}.`;
+    }, ${scene.credit?.artist ? `by ${scene.credit.artist}` : 'artist untraced'}.`;
   }
 
   private setTitle(title: string): void {
@@ -123,16 +124,46 @@ export class Chrome {
   private setCredit(scene: Scene): void {
     const element = this.elements.credit;
     element.textContent = '';
-
-    if (!scene.credit) {
-      element.hidden = true;
-      return;
-    }
-
     element.hidden = false;
+
     const label = document.createElement('span');
     label.className = 'credit__label';
     label.textContent = 'Artwork';
+
+    // An untraced piece says so beside the artwork, so the gallery never reads
+    // as fully attributed while it is not - but only while that distinguishes
+    // this piece from the others. When nothing at all has been traced, the note
+    // in the finale and the fallback makes the statement once instead.
+    if (!scene.credit?.artist) {
+      const source = scene.credit?.url ?? null;
+      if (!creditSummary(this.scenes).labelPerItem && !source) {
+        element.hidden = true;
+        return;
+      }
+
+      const parts: HTMLElement[] = [label];
+      if (creditSummary(this.scenes).labelPerItem) {
+        const unknown = document.createElement('span');
+        unknown.className = 'credit__name credit__name--unknown';
+        unknown.textContent = 'Artist untraced';
+        parts.push(unknown);
+      }
+
+      // No name, but the trail we followed is still worth showing.
+      if (source) {
+        const link = document.createElement('a');
+        link.className = 'credit__name';
+        link.textContent = 'Source';
+        link.href = source;
+        link.rel = 'noopener noreferrer';
+        link.target = '_blank';
+        parts.push(link);
+      }
+
+      element.append(...parts);
+      this.revealCredit(element);
+      return;
+    }
 
     const name = scene.credit.url ? document.createElement('a') : document.createElement('span');
     name.className = 'credit__name';
@@ -152,9 +183,12 @@ export class Chrome {
       element.append(license);
     }
 
-    if (!this.reducedMotion) {
-      gsap.fromTo(element, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.6, delay: 0.35 });
-    }
+    this.revealCredit(element);
+  }
+
+  private revealCredit(element: HTMLElement): void {
+    if (this.reducedMotion) return;
+    gsap.fromTo(element, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.6, delay: 0.35 });
   }
 
   setDetail(active: boolean): void {

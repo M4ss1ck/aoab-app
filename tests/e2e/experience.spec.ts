@@ -108,6 +108,18 @@ test.describe('the enhanced experience', () => {
     // Focus must land inside the finale, not be stranded on the gallery.
     await expect(page.locator('[data-finale-replay]')).toBeFocused({ timeout: 12_000 });
 
+    // The credits list every piece, not only the traced ones: filtering to the
+    // credited ones would make a half-traced gallery look fully attributed.
+    // Eleven, not ten: the hero counts as artwork and is credited with the rest.
+    await expect(finale.locator('.finale__credits-list li')).toHaveCount(11);
+
+    // The disclaimer names the rights holders and never claims a licence the
+    // artwork does not have.
+    const note = finale.locator('.finale__credits-note');
+    await expect(note).toContainText('TO Books');
+    await expect(note).toContainText('not affiliated');
+    await expect(note).not.toContainText('Creative Commons');
+
     await page.locator('[data-finale-back]').click();
     await expect(finale).toBeHidden({ timeout: 8000 });
   });
@@ -369,6 +381,41 @@ test.describe('without WebGL', () => {
     await expect(page.locator('[data-experience]')).toHaveAttribute('data-mode', 'fallback');
     await expect(page.locator('[data-fallback]')).toBeVisible();
     await expect(page.locator('.fallback__item')).toHaveCount(10);
+  });
+
+  test('names every piece in the fallback, untraced ones included', async ({ page }) => {
+    await page.addInitScript(() => {
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function patched(
+        this: HTMLCanvasElement,
+        type: string,
+        ...rest: unknown[]
+      ) {
+        if (type.includes('webgl')) return null;
+        return (original as never as (...args: unknown[]) => unknown).call(this, type, ...rest);
+      } as typeof HTMLCanvasElement.prototype.getContext;
+    });
+
+    await page.goto('/');
+    await page.waitForTimeout(1500);
+
+    // The no-JS markup is what a crawler and a screen reader read, so it has to
+    // carry the provenance statement itself rather than leaving it to the
+    // canvas experience nobody here can see.
+    const note = page.locator('.fallback__note');
+    await expect(note).toContainText('TO Books');
+    await expect(note).toContainText('not affiliated');
+    await expect(note).not.toContainText('Creative Commons');
+
+    // It also has to say how much is untraced, in prose, so the gap is stated
+    // once rather than implied by ten missing bylines.
+    await expect(note).toContainText('traced back to');
+
+    // A credit line is never rendered empty: it either names an artist or says
+    // the artist is untraced.
+    for (const credit of await page.locator('.fallback__credit').all()) {
+      expect((await credit.innerText()).trim()).not.toBe('');
+    }
   });
 
   test('the fallback has no accessibility violations', async ({ page }) => {

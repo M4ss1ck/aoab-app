@@ -120,6 +120,12 @@ export async function getHero() {
   const image = manifestImage(HERO_ID);
   const source = asset(image.upscaled);
 
+  // The hero is not a gallery scene, so orderImages filters it out and it never
+  // picks up a credit the way the ten scenes do. It is also the first artwork
+  // anyone sees, which makes it the last one that should go uncredited.
+  const meta = await getCollection('gallery');
+  const override = meta.find((entry) => entry.id === HERO_ID)?.data as SceneOverride | undefined;
+
   const widths = HERO_WIDTHS.filter(
     (width, index) => width <= image.width || HERO_WIDTHS[index - 1] < image.width,
   );
@@ -147,6 +153,8 @@ export async function getHero() {
 
   return {
     id: image.id,
+    title: override?.title ?? image.id,
+    credit: override?.credit ?? null,
     artTiers,
     widths: [...widths],
     // Used for the preload hint and as the last-resort URL.

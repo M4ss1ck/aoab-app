@@ -78,10 +78,84 @@ the build rather than silently doing nothing. Keys starting with `_` are notes.
 
 ### Credits
 
-The current ten pieces are Creative Commons works whose original artists could
-not be traced, so the closing panel says exactly that. Anything added from here
-should carry a `credit` block. It is rendered beside the artwork, in the closing
-credits, and in the fallback gallery.
+Every piece here is fan artwork for Ascendance of a Bookworm. That makes each
+one a derivative of a licensed work - the series is Miya Kazuki's, illustrated
+by You Shiina, published by TO Books - and it belongs to whoever drew it. The
+closing panel says so, names the rights holders, and disclaims any affiliation.
+
+The files arrived stripped of provenance: no EXIF author, no original filename.
+All eleven were re-saved through a phone gallery app in one five-minute session
+(`exif:DateTime` reads `2025:03:22` on every one), which is what removed it.
+Only `04.jpeg` still names a tool, `Celsys Studio Tool`. So the artists have to
+be traced by reverse image search.
+
+All eleven now carry a credit. Nine name an artist; two (`03`, `05`) name only
+where the piece was found, because the wallpaper sites hosting them do not say
+who drew them. `credit.artist` is optional for exactly that reason - knowing the
+source and knowing the artist are two different facts, and a credit with only a
+`url` still shows the trail and invites a correction. A credit that asserts
+neither fails the schema.
+
+A piece with no artist is labelled *Artist untraced* beside a **Source** link,
+and both the closing credits and the fallback gallery carry a note naming the
+rights holders and saying in prose how many pieces are still unattributed. The
+rule lives in `creditSummary` and `untracedSentence` (`src/lib/ordering.ts`) so
+all three render paths make the same statement.
+
+To trace a new piece, two tools, in order of effort.
+
+`scripts/provenance/trace.py` does it without a browser. The artwork here is
+mostly crops, and a crop defeats the global perceptual hashes IQDB and SauceNAO
+match on - but the corpus is one Danbooru tag with under a thousand posts, and
+that API is open. So it pulls the haystack down once and matches locally, where
+a crop is easy:
+
+```sh
+python3 scripts/provenance/trace.py fetch     # post metadata
+python3 scripts/provenance/trace.py download  # candidate images, resumable
+python3 scripts/provenance/trace.py match     # ORB + RANSAC, local
+```
+
+`TRACE_MIN_INLIERS` defaults to 80 and that number is measured, not chosen: on
+this corpus real matches scored 782-2410 inliers and false positives 12-25. It
+found five of the eleven. **Confirm every hit by eye before writing it down** -
+at a threshold of 12 the matcher confidently named four wrong artists.
+
+`scripts/provenance/build-sheet.mjs` covers what the matcher cannot, which is
+anything outside the Danbooru corpus. It builds a page with each source image
+beside pre-aimed Google Lens, SauceNAO, ascii2d and TinEye links, and one button
+that emits the whole `gallery.meta.json` with your answers merged in, in the
+file's own key order and formatting - so a pass that traced nothing leaves a
+zero-line diff:
+
+```sh
+node scripts/provenance/build-sheet.mjs /tmp/provenance.html
+```
+
+### Contact address
+
+Before the site goes public, set `CONTACT_EMAIL` so an artist has somewhere to
+write. It lives in the environment rather than in the source, because the
+address belongs to the deployment and changing it should not need a commit.
+
+```sh
+cp .env.example .env    # then fill it in
+```
+
+The site is static output, so this is read when the site is **built**, not when
+it is served:
+
+| Where | How |
+| ----- | --- |
+| local | `.env`, or `CONTACT_EMAIL=you@example.org pnpm build` |
+| docker | `docker build --build-arg CONTACT_EMAIL=you@example.org .` |
+| Coolify | **Build** Variables, not Environment Variables |
+
+Setting it as a runtime variable does nothing: by then the HTML already exists.
+
+Unset is a supported state - the takedown sentence is omitted, because a contact
+line pointing at a placeholder is worse than none. A value that is not an email
+address fails the build rather than shipping a `mailto:` nobody can use.
 
 ## How it fits together
 
