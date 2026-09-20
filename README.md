@@ -173,3 +173,49 @@ The smaller one is the self-hosted display face, worth about 3 points: it is the
 LCP element, and `font-display: swap` repaints it. That was a deliberate trade —
 a wordmark that renders as Palatino on one machine and Georgia on another is a
 worse outcome for this particular site than three Lighthouse points.
+
+## Deploying
+
+Coolify builds `Dockerfile` on the host and swaps the container. Two BuildKit
+cache mounts do the heavy lifting:
+
+- `/pnpm-store` keeps the package tarballs, so a lockfile change installs from
+  local disk instead of the network.
+- `/app/node_modules/.astro/assets` keeps Astro's optimised images. Astro keys
+  that cache by source content hash, so an image that has not changed is copied,
+  not re-encoded.
+
+The second one is the whole deploy budget. There are ten source images and 255
+derived variants (five widths, avif + webp + a jpeg fallback, plus the hero
+tiers and the depth maps). Encoding them all costs 75s of wall clock and 2.4GB
+of peak RSS on sixteen cores; Astro fans the queue out to `os.cpus().length`
+(`core/build/generate.js`), which inside a container is the *host's* core count,
+so a small VPS starts swapping and the same work takes tens of minutes.
+
+Measured end to end, `docker build` on this repo:
+
+| Build | Wall | Image step |
+| --- | --- | --- |
+| First build on a fresh host | 159s | 75.3s |
+| Deploy with source changes | **6.3s** | **11ms** |
+| Coolify "Force rebuild" (`--no-cache`) | 97s | 74.7s |
+
+A force rebuild pays the encode cost again but does not poison the cache: the
+next ordinary deploy is back to seconds. Only prune the builder cache when you
+mean to.
+
+Adding artwork is the one change that legitimately re-encodes, and only for the
+files whose content hash moved.
+
+### Zero downtime
+
+The image declares a `HEALTHCHECK` that makes a real HTTP request to Apache on
+port 80. Coolify waits for it before cutting traffic over, so the running
+container keeps serving for the whole build. If a deploy still drops requests,
+the rolling-update setting on the Coolify resource is off.
+
+### Dependencies
+
+The build runs `pnpm install --frozen-lockfile`. It used to run `npm i`, which
+ignored `pnpm-lock.yaml` and re-resolved every floating range at deploy time, so
+production quietly ran different code than the tests did.
