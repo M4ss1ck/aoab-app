@@ -1,6 +1,8 @@
 ---
 import { Image } from 'astro:assets';
 import type { Scene } from '../lib/scenes';
+import { CONTACT_EMAIL, SOURCE_WORK } from '../lib/site';
+import { creditSummary, untracedSentence } from '../lib/ordering';
 
 interface Props {
   scenes: Scene[];
@@ -30,7 +32,11 @@ const tiles = scenes.map((scene) => ({
   image: generated[`/src/assets/generated/${scene.id}.webp`]?.default,
 }));
 
-const credited = scenes.filter((scene) => scene.credit);
+// Every piece is listed, traced or not. Filtering to the credited ones would
+// make a half-traced gallery look fully credited, which is the failure this
+// panel exists to prevent.
+const { untraced, total, labelPerItem } = creditSummary(scenes);
+const gap = untracedSentence(untraced, total);
 ---
 
 <section class="finale" data-finale hidden aria-label="The complete gallery">
@@ -69,36 +75,51 @@ const credited = scenes.filter((scene) => scene.credit);
     <h2 class="finale__title">{title}</h2>
 
     <div class="finale__credits">
-      {
-        credited.length > 0 ? (
+      <h3 class="finale__credits-heading">Artwork</h3>
+      <ul class="finale__credits-list">
+        {scenes.map((scene) => (
+          <li>
+            <span class="finale__credits-piece">{scene.title}</span>
+            {scene.credit ? (
+              <>
+                {scene.credit.url ? (
+                  <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
+                    {scene.credit.artist}
+                  </a>
+                ) : (
+                  <span>{scene.credit.artist}</span>
+                )}
+                {scene.credit.license && (
+                  <span class="finale__credits-licence">{scene.credit.license}</span>
+                )}
+              </>
+            ) : (
+              labelPerItem && <span class="finale__credits-unknown">Artist untraced</span>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <p class="finale__credits-note">
+        Fan artwork for <em>{SOURCE_WORK.title}</em>, reproduced here out of admiration for it.
+        The series is {SOURCE_WORK.author}’s, illustrated by {SOURCE_WORK.illustrator} and
+        published by {SOURCE_WORK.publisher}; this site is not affiliated with any of them. Each
+        piece belongs to whoever drew it.
+        {gap && (
           <>
-            <h3 class="finale__credits-heading">Artwork</h3>
-            <ul class="finale__credits-list">
-              {credited.map((scene) => (
-                <li>
-                  <span class="finale__credits-piece">{scene.title}</span>
-                  {scene.credit?.url ? (
-                    <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
-                      {scene.credit.artist}
-                    </a>
-                  ) : (
-                    <span>{scene.credit?.artist}</span>
-                  )}
-                  {scene.credit?.license && (
-                    <span class="finale__credits-licence">{scene.credit.license}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
+            {' '}
+            {gap} If one of them is yours, or you know who made it, we want to credit you
+            properly.
           </>
-        ) : (
-          <p class="finale__credits-none">
-            These pieces are Creative Commons works whose original artists we have not been
-            able to trace. If one of them is yours, or you know who made it, we would like to
-            credit you properly.
-          </p>
-        )
-      }
+        )}
+        {CONTACT_EMAIL && (
+          <>
+            {' '}
+            To be credited differently, or taken down, write to{' '}
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+          </>
+        )}
+      </p>
     </div>
 
     <div class="finale__actions">

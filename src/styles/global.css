@@ -472,6 +472,15 @@ html.is-enhanced body {
   opacity: 0.6;
 }
 
+.credit__name--unknown {
+  /* 0.85, not the 0.6-ish dimming used elsewhere: this text sits at 13.6px on
+     the near-black background, and anything lower falls under the 4.5:1 AA
+     floor. Measured 5.31:1. The italic carries the "this is a gap" signal
+     instead. */
+  opacity: 0.85;
+  font-style: italic;
+}
+
 .detail-hint {
   font-size: 0.68rem;
   letter-spacing: 0.26em;
@@ -665,8 +674,25 @@ html.is-enhanced body {
   opacity: 0.6;
 }
 
-.finale__credits-none {
+.finale__credits-unknown {
+  /* Visibly a gap rather than a name, so an untraced piece reads as unfinished
+     business instead of as a credit nobody bothered to make a link. */
+  /* 0.85, not the 0.6-ish dimming used elsewhere: this text sits at 13.6px on
+     the near-black background, and anything lower falls under the 4.5:1 AA
+     floor. Measured 5.31:1. The italic carries the "this is a gap" signal
+     instead. */
+  opacity: 0.85;
+  font-style: italic;
+}
+
+.finale__credits-note {
   line-height: 1.6;
+  margin-block-start: 1.1rem;
+  opacity: 0.8;
+}
+
+.finale__credits-note em {
+  font-style: italic;
 }
 
 .finale__actions {
@@ -817,6 +843,28 @@ html[data-js='true'] .fallback {
 
 .fallback__credit a {
   color: var(--ink);
+}
+
+.fallback__note {
+  max-width: 62ch;
+  margin-block-start: 3rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--ink);
+  opacity: 0.8;
+}
+
+.fallback__note em {
+  font-style: italic;
+}
+
+.fallback__credit--unknown {
+  /* 0.85, not the 0.6-ish dimming used elsewhere: this text sits at 13.6px on
+     the near-black background, and anything lower falls under the 4.5:1 AA
+     floor. Measured 5.31:1. The italic carries the "this is a gap" signal
+     instead. */
+  opacity: 0.85;
+  font-style: italic;
 }
 
 /* ------------------------------------------------------- reduced motion -- */

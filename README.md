@@ -78,10 +78,44 @@ the build rather than silently doing nothing. Keys starting with `_` are notes.
 
 ### Credits
 
-The current ten pieces are Creative Commons works whose original artists could
-not be traced, so the closing panel says exactly that. Anything added from here
-should carry a `credit` block. It is rendered beside the artwork, in the closing
-credits, and in the fallback gallery.
+Every piece here is fan artwork for Ascendance of a Bookworm. That makes each
+one a derivative of a licensed work - the series is Miya Kazuki's, illustrated
+by You Shiina, published by TO Books - and it belongs to whoever drew it. The
+closing panel says so, names the rights holders, and disclaims any affiliation.
+
+The files arrived stripped of provenance: no EXIF author, no original filename.
+All eleven were re-saved through a phone gallery app in one five-minute session
+(`exif:DateTime` reads `2025:03:22` on every one), which is what removed it.
+Only `04.jpeg` still names a tool, `Celsys Studio Tool`. So the artists have to
+be traced by reverse image search.
+
+Until they are, the site states the gap rather than leaving a blank. The closing
+credits list every piece, traced or not, and both the credits and the fallback
+gallery carry a note naming the rights holders and saying in prose how many
+pieces are still untraced. A piece with no artist is labelled *Artist untraced*
+beside the artwork - but only while some pieces *are* traced, because ten
+identical labels repeat the note underneath them and say nothing one row at a
+time. The rule lives in `creditSummary` and `untracedSentence`
+(`src/lib/ordering.ts`) so all three surfaces make the same statement.
+
+To trace them, build the provenance sheet:
+
+```sh
+node scripts/provenance/build-sheet.mjs /tmp/provenance.html
+```
+
+Open it in a browser. Each source image sits next to a pre-aimed Google Lens,
+SauceNAO, ascii2d and TinEye link; drag the artwork into the search box, or save
+it and upload. Fill in the artist, the source URL and how permission stands. The
+sheet remembers your answers between sittings, and **Copy gallery.meta.json**
+gives you the whole file with the credits merged in, in the file's own key order
+and formatting - so a pass that traced nothing leaves a zero-line diff, and
+every line that does change is a credit somebody actually found. Paste it over
+`src/data/gallery.meta.json`.
+
+Before the site goes public, set `CONTACT_EMAIL` in `src/lib/site.ts`. It is
+`null` by default and the takedown sentence is omitted while it stays that way,
+because a contact line pointing at a placeholder is worse than none.
 
 ## How it fits together
 
