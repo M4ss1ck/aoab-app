@@ -7,9 +7,10 @@ import { creditSummary, untracedSentence } from '../lib/ordering';
 interface Props {
   scenes: Scene[];
   title: string;
+  hero: { id: string; title: string; credit: Scene['credit'] };
 }
 
-const { scenes, title } = Astro.props;
+const { scenes, title, hero } = Astro.props;
 
 const generated = import.meta.glob<{ default: ImageMetadata }>(
   '/src/assets/generated/*.webp',
@@ -35,7 +36,10 @@ const tiles = scenes.map((scene) => ({
 // Every piece is listed, traced or not. Filtering to the credited ones would
 // make a half-traced gallery look fully credited, which is the failure this
 // panel exists to prevent.
-const { untraced, total, labelPerItem } = creditSummary(scenes);
+// The hero opens the experience and belongs in the credits with everything
+// else, even though it is not a gallery scene.
+const credited = [{ title: hero.title, credit: hero.credit }, ...scenes];
+const { untraced, total, labelPerItem } = creditSummary(credited);
 const gap = untracedSentence(untraced, total);
 ---
 
@@ -77,7 +81,7 @@ const gap = untracedSentence(untraced, total);
     <div class="finale__credits">
       <h3 class="finale__credits-heading">Artwork</h3>
       <ul class="finale__credits-list">
-        {scenes.map((scene) => (
+        {credited.map((scene) => (
           <li>
             <span class="finale__credits-piece">{scene.title}</span>
             {scene.credit ? (

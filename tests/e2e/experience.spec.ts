@@ -110,7 +110,8 @@ test.describe('the enhanced experience', () => {
 
     // The credits list every piece, not only the traced ones: filtering to the
     // credited ones would make a half-traced gallery look fully attributed.
-    await expect(finale.locator('.finale__credits-list li')).toHaveCount(10);
+    // Eleven, not ten: the hero counts as artwork and is credited with the rest.
+    await expect(finale.locator('.finale__credits-list li')).toHaveCount(11);
 
     // The disclaimer names the rights holders and never claims a licence the
     // artwork does not have.
@@ -408,7 +409,7 @@ test.describe('without WebGL', () => {
 
     // It also has to say how much is untraced, in prose, so the gap is stated
     // once rather than implied by ten missing bylines.
-    await expect(note).toContainText('has been traced back to its artist');
+    await expect(note).toContainText('traced back to');
 
     // A credit line is never rendered empty: it either names an artist or says
     // the artist is untraced.

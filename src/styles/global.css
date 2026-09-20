@@ -664,6 +664,15 @@ html.is-enhanced body {
   flex-wrap: wrap;
 }
 
+.finale__credits-list a,
+.finale__credits-note a {
+  /* Same reason as the fallback credits: these links sit in dimmed text. */
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: from-font;
+}
+
 .finale__credits-piece {
   font-family: var(--font-display);
   font-weight: 300;
@@ -842,7 +851,14 @@ html[data-js='true'] .fallback {
 }
 
 .fallback__credit a {
+  /* Underlined, not just brighter. An artist's name sits inside dimmed caption
+     text, and colour alone only separates the two by 2.55:1 - under the 3:1 that
+     a link inside a text block needs. The underline carries the affordance so
+     the colour does not have to. */
   color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: from-font;
 }
 
 .fallback__note {
