@@ -132,9 +132,30 @@ zero-line diff:
 node scripts/provenance/build-sheet.mjs /tmp/provenance.html
 ```
 
-Before the site goes public, set `CONTACT_EMAIL` in `src/lib/site.ts`. It is
-`null` by default and the takedown sentence is omitted while it stays that way,
-because a contact line pointing at a placeholder is worse than none.
+### Contact address
+
+Before the site goes public, set `CONTACT_EMAIL` so an artist has somewhere to
+write. It lives in the environment rather than in the source, because the
+address belongs to the deployment and changing it should not need a commit.
+
+```sh
+cp .env.example .env    # then fill it in
+```
+
+The site is static output, so this is read when the site is **built**, not when
+it is served:
+
+| Where | How |
+| ----- | --- |
+| local | `.env`, or `CONTACT_EMAIL=you@example.org pnpm build` |
+| docker | `docker build --build-arg CONTACT_EMAIL=you@example.org .` |
+| Coolify | **Build** Variables, not Environment Variables |
+
+Setting it as a runtime variable does nothing: by then the HTML already exists.
+
+Unset is a supported state - the takedown sentence is omitted, because a contact
+line pointing at a placeholder is worse than none. A value that is not an email
+address fails the build rather than shipping a `mailto:` nobody can use.
 
 ## How it fits together
 

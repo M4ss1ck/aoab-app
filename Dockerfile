@@ -32,6 +32,18 @@ COPY . .
 #
 # The mount is scoped to assets/ rather than all of .astro so the content-layer
 # data store is still rebuilt fresh each time and cannot go stale.
+# The site is static output, so CONTACT_EMAIL is baked in at build time rather
+# than read by the running container. It has to arrive as a build argument:
+# setting it as a runtime environment variable in Coolify does nothing, because
+# by then the HTML already exists. Unset is fine - the takedown line is simply
+# omitted. An address that is not an email fails the build rather than shipping
+# a mailto: nobody can use.
+#
+#   Coolify: Build Variables (not Environment Variables)
+#   docker:  docker build --build-arg CONTACT_EMAIL=you@example.org .
+ARG CONTACT_EMAIL=""
+ENV CONTACT_EMAIL=$CONTACT_EMAIL
+
 RUN --mount=type=cache,target=/app/node_modules/.astro/assets,sharing=locked \
     pnpm build
 

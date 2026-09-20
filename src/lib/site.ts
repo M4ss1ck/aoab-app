@@ -1,3 +1,5 @@
+import { CONTACT_EMAIL as CONFIGURED_CONTACT_EMAIL } from 'astro:env/server';
+
 /**
  * Facts about the site itself, as opposed to the artwork in it.
  *
@@ -23,8 +25,24 @@ export const SOURCE_WORK = {
 /**
  * Where an artist can reach a human.
  *
- * Deliberately `null` until a real address exists. A takedown line pointing at
- * a placeholder is worse than no line at all, so the disclaimer drops the
- * sentence rather than printing something nobody reads.
+ * Comes from the environment, not from here: the address changes with the
+ * deployment, and whoever redeploys should not need a commit to change it.
+ * Unset is a supported state - the disclaimer drops the takedown sentence
+ * rather than printing a placeholder nobody reads.
+ *
+ * Read at build time, because the site is static output. Setting it after the
+ * build has no effect.
  */
-export const CONTACT_EMAIL: string | null = null;
+const configured = CONFIGURED_CONTACT_EMAIL?.trim() || null;
+
+// A dead contact line is worse than an absent one, and the mistake is easy to
+// make in a deploy panel where nothing checks what was typed. Failing the
+// build is the only place this can be caught before an artist tries it.
+if (configured && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(configured)) {
+  throw new Error(
+    `CONTACT_EMAIL is set to "${configured}", which is not an email address. ` +
+      'Leave it unset to omit the takedown line entirely.',
+  );
+}
+
+export const CONTACT_EMAIL: string | null = configured;
