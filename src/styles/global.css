@@ -561,25 +561,53 @@ html.is-enhanced body {
   position: fixed;
   inset: 0;
   z-index: 7;
-  display: grid;
-  grid-template-columns: 1fr;
-  align-content: center;
-  gap: clamp(1.5rem, 4vh, 3rem);
   padding: clamp(1.5rem, 5vh, 4rem) var(--gutter);
+  /* The gallery sits behind a notch and a home indicator on a phone, and the
+     finale is the one surface here with content that runs to its own edges. */
+  padding-block-start: max(clamp(1.5rem, 5vh, 4rem), env(safe-area-inset-top));
+  padding-block-end: max(clamp(1.5rem, 5vh, 4rem), env(safe-area-inset-bottom));
   background: color-mix(in oklab, var(--backdrop) 88%, black);
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* NavigationController stops cancelling gestures while this is open (see
+     `isPaused`), so the browser needs to know the axis it may take. */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 .finale[hidden] {
   display: none;
 }
 
+/**
+ * Centred when it fits, scrolled from the top when it does not.
+ *
+ * `align-content: center` on the scroll container itself was the bug: an
+ * overflowing centred box spills equally in both directions, and the half
+ * above the scrollport has no scroll position that reaches it. A min-height
+ * flex child that justifies to centre degrades to top-aligned the moment the
+ * content outgrows the box, which is exactly the behaviour wanted.
+ */
+.finale__inner {
+  min-block-size: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(1.5rem, 4vh, 3rem);
+  width: min(100%, 64rem);
+  margin-inline: auto;
+}
+
 .finale__wall {
   display: grid;
+  /* Ten pieces, so five columns is the only count that leaves no ragged row. */
   grid-template-columns: repeat(5, 1fr);
   gap: clamp(0.35rem, 1vw, 0.75rem);
-  width: min(100%, 64rem);
+  /* Two rows of 4:3 tiles means the wall's height is its width times 0.3, so
+     the vh term is what stops a wide-but-short window (a laptop with browser
+     chrome, a window dragged to half the screen) from spending its whole
+     viewport on thumbnails before the title has been reached. */
+  width: min(100%, 64rem, 95vh);
   margin-inline: auto;
 }
 
@@ -631,9 +659,22 @@ html.is-enhanced body {
   opacity: 1;
 }
 
+/* No hover on touch, so a reveal-on-hover label is a label nobody can ever
+   read - ten unnamed thumbnails. Show it outright there, one line, clipped
+   rather than wrapped so a long title cannot swallow the tile it sits on. */
+@media (hover: none) {
+  .finale__tile-label {
+    opacity: 1;
+    padding: 0.35rem 0.4rem;
+    font-size: 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .finale__panel {
-  width: min(100%, 64rem);
-  margin-inline: auto;
+  width: 100%;
   display: grid;
   gap: 1rem;
   color: var(--ink-light);
@@ -723,7 +764,7 @@ html.is-enhanced body {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
-  margin-block-start: 0.5rem;
+  margin-block-start: 0.25rem;
 }
 
 .finale__button {
@@ -752,14 +793,65 @@ html.is-enhanced body {
   border-color: var(--ink-light);
 }
 
-/* The chrome belongs to the gallery, not to the ending. */
-.experience[data-finale-open='true'] .chrome {
+/* The chrome belongs to the gallery, not to the ending. Faded out is not the
+   same as gone: the rail sets `pointer-events: auto` for its own hit areas, so
+   without this it stays clickable through the finale at zero opacity. */
+.experience[data-finale-open='true'] .chrome,
+.experience[data-finale-open='true'] .rail {
   opacity: 0;
+  pointer-events: none;
+}
+
+/**
+ * The height the credits were spending is horizontal space the panel already
+ * had. Past this width the list moves beside the title and the actions instead
+ * of below them, which halves the panel and leaves the wall its full width -
+ * splitting the wall off into its own column instead just shrinks the ten
+ * pieces to thumbnails and unbalances the two halves.
+ */
+@media (min-width: 56rem) {
+  .finale__panel {
+    grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+    /* The credits run taller than the three items beside them, and a spanning
+       grid item hands its extra height to every track it crosses. Pinning the
+       first two rows to auto sends all of that slack to the last one, so the
+       title stays under its eyebrow instead of drifting down the column. */
+    grid-template-rows: auto auto 1fr;
+    column-gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: start;
+  }
+
+  .finale__eyebrow,
+  .finale__title,
+  .finale__actions {
+    grid-column: 1;
+  }
+
+  .finale__credits {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
 }
 
 @media (max-width: 700px) {
   .finale__wall {
+    /* Five 4:3 tiles across a phone is about 65px of artwork each, which is a
+       contact sheet rather than a wall. Three columns trades the clean last
+       row for tiles big enough to recognise a picture in. */
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .finale__credits {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 26rem) {
+  .finale__actions .finale__button {
+    /* Two pills already wrap to two lines at this width. Full-bleed makes that
+       a deliberate stack instead of a ragged one. */
+    flex: 1 1 100%;
+    text-align: center;
   }
 }
 

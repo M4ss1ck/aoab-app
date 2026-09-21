@@ -7,6 +7,13 @@
  * smearing across a scrub at whatever speed the wheel happened to spin. It also
  * means touch behaves identically to wheel, with no scroll-jacking and no
  * artificially tall page.
+ *
+ * That swallowing of wheel and touchmove is total, which is why `isPaused`
+ * exists. A surface that is genuinely a document rather than a scene - the
+ * finale and its credits - has to be able to scroll, and it cannot while this
+ * controller is cancelling every gesture underneath it. While paused the
+ * controller touches nothing at all: no preventDefault, no commit, so the
+ * browser's own scrolling, keyboard paging and focus behaviour take over.
  */
 
 export interface NavigationHandlers {
@@ -16,6 +23,12 @@ export interface NavigationHandlers {
   onDetailToggle: () => void;
   /** True while a transition is running; input is ignored then. */
   isBusy: () => boolean;
+  /**
+   * True while another surface owns the viewport and must scroll natively.
+   * Unlike `isBusy`, this suppresses `preventDefault` as well as the commit -
+   * a paused controller is indistinguishable from an absent one.
+   */
+  isPaused?: () => boolean;
 }
 
 /** Wheel deltas below this are momentum tail or a trackpad drift, not intent. */
@@ -39,6 +52,10 @@ export class NavigationController {
     this.attach();
   }
 
+  private paused(): boolean {
+    return this.handlers.isPaused?.() ?? false;
+  }
+
   private ready(): boolean {
     return !this.handlers.isBusy() && performance.now() - this.lastMove > COOLDOWN_MS;
   }
@@ -52,6 +69,7 @@ export class NavigationController {
   }
 
   private handleWheel = (event: WheelEvent): void => {
+    if (this.paused()) return;
     event.preventDefault();
 
     // Accumulate rather than firing per event: a trackpad emits dozens of tiny
@@ -69,6 +87,8 @@ export class NavigationController {
   };
 
   private handleKey = (event: KeyboardEvent): void => {
+    if (this.paused()) return;
+
     const withinControl =
       event.target instanceof HTMLElement &&
       ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName);
@@ -107,12 +127,13 @@ export class NavigationController {
   };
 
   private handleTouchStart = (event: TouchEvent): void => {
+    if (this.paused()) return;
     const touch = event.touches[0];
     this.touchStart = { x: touch.clientX, y: touch.clientY };
   };
 
   private handleTouchEnd = (event: TouchEvent): void => {
-    if (!this.touchStart) return;
+    if (this.paused() || !this.touchStart) return;
     const touch = event.changedTouches[0];
     const dx = touch.clientX - this.touchStart.x;
     const dy = touch.clientY - this.touchStart.y;
@@ -128,6 +149,7 @@ export class NavigationController {
   };
 
   private handleTouchMove = (event: TouchEvent): void => {
+    if (this.paused()) return;
     event.preventDefault();
   };
 

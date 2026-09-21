@@ -6,6 +6,10 @@ import gsap from 'gsap';
  * Handles showing, hiding and focus. The tiles are inert while the finale is
  * hidden - they are real buttons, so leaving them in the tab order would let
  * someone tab into an invisible grid from the gallery.
+ *
+ * This is the one surface in the experience that scrolls. NavigationController
+ * is paused while it is open (see `isPaused` in main.ts), which hands wheel,
+ * touch and arrow keys back to the browser.
  */
 export class Finale {
   private readonly element: HTMLElement;
@@ -54,6 +58,11 @@ export class Finale {
     this.element.removeAttribute('aria-hidden');
     this.wall.removeAttribute('aria-hidden');
     this.tiles.forEach((tile) => tile.removeAttribute('tabindex'));
+
+    // The finale scrolls now, and hide() only fades it - the scroll position
+    // survives. Without this, coming back a second time opens halfway down the
+    // credits with the wall it just animated above the fold.
+    this.element.scrollTop = 0;
 
     if (this.reducedMotion) {
       gsap.set(this.element, { opacity: 1 });

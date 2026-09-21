@@ -141,6 +141,12 @@ export function boot(data: BootData): void {
     // The renderer queues one move of its own, so input is never dropped; the
     // controller's cooldown is what keeps a single gesture to a single scene.
     isBusy: () => false,
+    // The finale is a document, not a scene: it has credits that run past the
+    // fold on a phone. Handing input back to the browser there is what lets it
+    // scroll at all - the controller cancels every wheel and touchmove
+    // otherwise, and the panel below the wall becomes unreachable. Leaving it
+    // is explicit (the two buttons, or Escape) rather than a swipe.
+    isPaused: () => finale.isVisible,
   });
 
   chrome.onJump = (index) => {
