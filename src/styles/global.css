@@ -308,8 +308,13 @@ html.is-enhanced body {
 
 .progress__value {
   font-size: 0.75rem;
+  /* Tabular figures plus a three-figure box: the count runs 0, 1 ... 100
+     unpadded, and the skip control below it never moves as digits are added.
+     The trailing letter-spacing sits inside the box, hence the extra 0.18em. */
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.18em;
+  min-width: calc(3ch + 0.54em);
+  text-align: right;
   opacity: 0.65;
 }
 

@@ -206,7 +206,9 @@ export function boot(data: BootData): void {
         progressBar.style.setProperty('--progress', String(value));
         progressBar.setAttribute('aria-valuenow', String(percent));
       }
-      if (progressValue) progressValue.textContent = `${String(percent).padStart(3, '0')}`;
+      // Unpadded: 0, 1 ... 99, 100. The CSS reserves three figures so nothing
+      // beside it shifts as the count grows.
+      if (progressValue) progressValue.textContent = String(percent);
     },
   });
 
