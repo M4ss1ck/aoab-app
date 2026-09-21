@@ -44,101 +44,107 @@ const gap = untracedSentence(untraced, total);
 ---
 
 <section class="finale" data-finale hidden aria-label="The complete gallery">
-  <div class="finale__wall" data-finale-wall aria-hidden="true">
-    {
-      tiles.map(({ scene, image }, index) => (
-        <button
-          class="finale__tile"
-          type="button"
-          data-finale-tile
-          data-index={index}
-          style={`--accent: ${scene.palette[0]}`}
-          aria-label={`Return to ${scene.title}`}
-          tabindex="-1"
-        >
-          {image && (
-            <Image
-              src={image}
-              width={420}
-              densities={[1, 2]}
-              format="webp"
-              quality={78}
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
-          )}
-          <span class="finale__tile-label">{scene.title}</span>
-        </button>
-      ))
-    }
-  </div>
-
-  <div class="finale__panel">
-    <p class="finale__eyebrow">The end of the sequence</p>
-    <h2 class="finale__title">{title}</h2>
-
-    <div class="finale__credits">
-      <h3 class="finale__credits-heading">Artwork</h3>
-      <ul class="finale__credits-list">
-        {credited.map((scene) => (
-          <li>
-            <span class="finale__credits-piece">{scene.title}</span>
-            {scene.credit?.artist ? (
-              scene.credit.url ? (
-                <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
-                  {scene.credit.artist}
-                </a>
-              ) : (
-                <span>{scene.credit.artist}</span>
-              )
-            ) : (
-              <>
-                {labelPerItem && <span class="finale__credits-unknown">Artist untraced</span>}
-                {/* No name, but we can still show the trail we followed. */}
-                {scene.credit?.url && (
-                  <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
-                    Source
-                  </a>
-                )}
-              </>
+  <!-- The centring lives on this wrapper, not on the scroll container. A
+       scroll container that centres its own overflowing content makes the top
+       of that content unreachable; `min-block-size: 100%` plus centre-justify
+       centres while it fits and falls back to top-aligned once it does not. -->
+  <div class="finale__inner">
+    <div class="finale__wall" data-finale-wall aria-hidden="true">
+      {
+        tiles.map(({ scene, image }, index) => (
+          <button
+            class="finale__tile"
+            type="button"
+            data-finale-tile
+            data-index={index}
+            style={`--accent: ${scene.palette[0]}`}
+            aria-label={`Return to ${scene.title}`}
+            tabindex="-1"
+          >
+            {image && (
+              <Image
+                src={image}
+                width={420}
+                densities={[1, 2]}
+                format="webp"
+                quality={78}
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
             )}
-            {scene.credit?.license && (
-              <span class="finale__credits-licence">{scene.credit.license}</span>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      <p class="finale__credits-note">
-        Fan artwork for <em>{SOURCE_WORK.title}</em>, reproduced here out of admiration for it.
-        The series is {SOURCE_WORK.author}’s, illustrated by {SOURCE_WORK.illustrator} and
-        published by {SOURCE_WORK.publisher}; this site is not affiliated with any of them. Each
-        piece belongs to whoever drew it.
-        {gap && (
-          <>
-            {' '}
-            {gap} If one of them is yours, or you know who made it, we want to credit you
-            properly.
-          </>
-        )}
-        {CONTACT_EMAIL && (
-          <>
-            {' '}
-            To be credited differently, or taken down, write to{' '}
-            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
-          </>
-        )}
-      </p>
+            <span class="finale__tile-label">{scene.title}</span>
+          </button>
+        ))
+      }
     </div>
 
-    <div class="finale__actions">
-      <button class="finale__button" type="button" data-finale-replay>
-        Watch it again
-      </button>
-      <button class="finale__button finale__button--quiet" type="button" data-finale-back>
-        Back to the last piece
-      </button>
+    <div class="finale__panel">
+      <p class="finale__eyebrow">The end of the sequence</p>
+      <h2 class="finale__title">{title}</h2>
+
+      <div class="finale__actions">
+        <button class="finale__button" type="button" data-finale-replay>
+          Watch it again
+        </button>
+        <button class="finale__button finale__button--quiet" type="button" data-finale-back>
+          Back to the last piece
+        </button>
+      </div>
+
+      <div class="finale__credits">
+        <h3 class="finale__credits-heading">Artwork</h3>
+        <ul class="finale__credits-list">
+          {credited.map((scene) => (
+            <li>
+              <span class="finale__credits-piece">{scene.title}</span>
+              {scene.credit?.artist ? (
+                scene.credit.url ? (
+                  <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
+                    {scene.credit.artist}
+                  </a>
+                ) : (
+                  <span>{scene.credit.artist}</span>
+                )
+              ) : (
+                <>
+                  {labelPerItem && <span class="finale__credits-unknown">Artist untraced</span>}
+                  {/* No name, but we can still show the trail we followed. */}
+                  {scene.credit?.url && (
+                    <a href={scene.credit.url} rel="noopener noreferrer" target="_blank">
+                      Source
+                    </a>
+                  )}
+                </>
+              )}
+              {scene.credit?.license && (
+                <span class="finale__credits-licence">{scene.credit.license}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+
+        <p class="finale__credits-note">
+          Fan artwork for <em>{SOURCE_WORK.title}</em>, reproduced here out of admiration for it.
+          The series is {SOURCE_WORK.author}’s, illustrated by {SOURCE_WORK.illustrator} and
+          published by {SOURCE_WORK.publisher}; this site is not affiliated with any of them. Each
+          piece belongs to whoever drew it.
+          {gap && (
+            <>
+              {' '}
+              {gap} If one of them is yours, or you know who made it, we want to credit you
+              properly.
+            </>
+          )}
+          {CONTACT_EMAIL && (
+            <>
+              {' '}
+              To be credited differently, or taken down, write to{' '}
+              <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+            </>
+          )}
+        </p>
+      </div>
     </div>
   </div>
 </section>

@@ -124,6 +124,95 @@ test.describe('the enhanced experience', () => {
     await expect(finale).toBeHidden({ timeout: 8000 });
   });
 
+  test('the whole finale is reachable, top and bottom, on every viewport', async ({ page }) => {
+    // Three bugs met here. NavigationController cancelled every wheel and
+    // touchmove on the experience, so the overlay's own scroll container never
+    // saw a gesture; the container centred its overflowing content, which puts
+    // the top of that content at a scroll position that does not exist; and the
+    // stacked layout pushed the credits off a phone entirely. The symptom was
+    // one thing: content you could see was there and could not get to.
+    await page.goto('/');
+    await ready(page);
+
+    await page.keyboard.press('End');
+    await page.waitForTimeout(3000);
+    await page.keyboard.press('ArrowRight');
+
+    const finale = page.locator('[data-finale]');
+    await expect(finale).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('[data-finale-replay]')).toBeFocused({ timeout: 12_000 });
+
+    const overflows = await finale.evaluate(
+      (element) => element.scrollHeight - element.clientHeight > 1,
+    );
+
+    if (overflows) {
+      // A trusted wheel over the overlay has to move it. This is the assertion
+      // that fails outright when the gallery controller is swallowing input.
+      const box = (await finale.boundingBox())!;
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.wheel(0, 800);
+      await expect
+        .poll(() => finale.evaluate((element) => element.scrollTop), { timeout: 5000 })
+        .toBeGreaterThan(0);
+    }
+
+    // The bottom of the credits: the last piece, and the note that tells
+    // someone how to be credited differently.
+    const lastCredit = finale.locator('.finale__credits-list li').last();
+    await lastCredit.scrollIntoViewIfNeeded();
+    await expect(lastCredit).toBeInViewport();
+    await finale.locator('.finale__credits-note').scrollIntoViewIfNeeded();
+    await expect(finale.locator('.finale__credits-note')).toBeInViewport();
+
+    // Both ways out stay reachable rather than stranded past the fold.
+    await page.locator('[data-finale-replay]').scrollIntoViewIfNeeded();
+    await expect(page.locator('[data-finale-replay]')).toBeInViewport();
+    await expect(page.locator('[data-finale-back]')).toBeInViewport();
+
+    // And the top is not stranded above the scrollport, which is what centring
+    // an overflowing scroll container does.
+    await finale.evaluate((element) => element.scrollTo(0, 0));
+    await expect(finale.locator('.finale__tile').first()).toBeInViewport({ ratio: 0.9 });
+
+    // No horizontal escape: a wall that overflows sideways on a phone reads as
+    // broken even when everything is technically present.
+    const clipsSideways = await finale.evaluate(
+      (element) => element.scrollWidth - element.clientWidth > 1,
+    );
+    expect(clipsSideways).toBe(false);
+
+    // On a device with no hover, a reveal-on-hover tile label is a label that
+    // is never read. The wall would be ten unnamed thumbnails.
+    const hoverless = await page.evaluate(() => matchMedia('(hover: none)').matches);
+    const firstLabel = finale.locator('.finale__tile-label').first();
+    const labelOpacity = await firstLabel.evaluate(
+      (element) => getComputedStyle(element).opacity,
+    );
+    expect(Number(labelOpacity)).toBe(hoverless ? 1 : 0);
+  });
+
+  test('the finale reopens at the top rather than where it was left', async ({ page }) => {
+    // hide() only fades the overlay, so its scroll position outlives it.
+    await page.goto('/');
+    await ready(page);
+
+    await page.keyboard.press('End');
+    await page.waitForTimeout(3000);
+    await page.keyboard.press('ArrowRight');
+
+    const finale = page.locator('[data-finale]');
+    await expect(finale).toBeVisible({ timeout: 8000 });
+
+    await finale.evaluate((element) => element.scrollTo(0, element.scrollHeight));
+    await page.locator('[data-finale-back]').click();
+    await expect(finale).toBeHidden({ timeout: 8000 });
+
+    await page.keyboard.press('ArrowRight');
+    await expect(finale).toBeVisible({ timeout: 8000 });
+    expect(await finale.evaluate((element) => element.scrollTop)).toBe(0);
+  });
+
   test('the intro plays on every visit, not just the first', async ({ page }) => {
     await page.goto('/');
     // The drawing is on screen before the gallery takes over.

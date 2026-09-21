@@ -9,7 +9,7 @@ interface Recorder {
   detail: number;
 }
 
-function setup(busy = false) {
+function setup(busy = false, paused = false) {
   const target = document.createElement('div');
   document.body.append(target);
 
@@ -20,6 +20,7 @@ function setup(busy = false) {
     onJump: (index) => calls.jumps.push(index),
     onDetailToggle: () => calls.detail++,
     isBusy: () => busy,
+    isPaused: () => paused,
   });
 
   return { target, calls, controller };
@@ -223,6 +224,74 @@ describe('touch input', () => {
     touch(context.target, [200, 200], [210, 320]);
     expect(context.calls.previous).toBe(1);
     expect(context.calls.next).toBe(0);
+  });
+});
+
+describe('pausing for a scrolling surface', () => {
+  // The finale is a document, not a scene. While it is open the controller has
+  // to be invisible: cancelling the wheel and touchmove is what made its
+  // credits unreachable on every device, because a cancelled gesture never
+  // reaches the overlay's own scroll container.
+
+  it('commits nothing at all while paused', () => {
+    context = setup(false, true);
+    wheel(context.target, 400);
+    key('ArrowRight');
+    key('ArrowLeft');
+    key('Home');
+    touch(context.target, [300, 400], [200, 400]);
+    expect(context.calls).toEqual({ next: 0, previous: 0, jumps: [], detail: 0 });
+  });
+
+  it('lets the wheel through so the overlay can scroll', () => {
+    // This is the distinction from isBusy, which still swallows the gesture.
+    context = setup(false, true);
+    const event = new WheelEvent('wheel', { deltaY: 120, cancelable: true, bubbles: true });
+    context.target.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('lets touchmove through so the overlay can scroll', () => {
+    context = setup(false, true);
+    const event = new Event('touchmove', { bubbles: true, cancelable: true });
+    context.target.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('lets arrow and paging keys through so they scroll the overlay', () => {
+    context = setup(false, true);
+    for (const name of ['ArrowDown', 'PageDown', ' ', 'Home', 'End']) {
+      const event = new KeyboardEvent('keydown', { key: name, cancelable: true, bubbles: true });
+      window.dispatchEvent(event);
+      expect(event.defaultPrevented, `${name} should reach the browser`).toBe(false);
+    }
+  });
+
+  it('still cancels the wheel when it is merely busy', () => {
+    // Guards the contract boundary: busy suppresses the move, paused suppresses
+    // the controller.
+    context = setup(true, false);
+    const event = new WheelEvent('wheel', { deltaY: 120, cancelable: true, bubbles: true });
+    context.target.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(context.calls.next).toBe(0);
+  });
+
+  it('works unchanged when no pause predicate is supplied', () => {
+    // isPaused is optional; the gallery's other callers must not have to know.
+    const target = document.createElement('div');
+    document.body.append(target);
+    let next = 0;
+    const controller = new NavigationController(target, {
+      onNext: () => next++,
+      onPrevious: () => {},
+      onJump: () => {},
+      onDetailToggle: () => {},
+      isBusy: () => false,
+    });
+    wheel(target, 120);
+    expect(next).toBe(1);
+    controller.destroy();
   });
 });
 
