@@ -231,7 +231,7 @@ Measured with Lighthouse against the production build.
 
 LCP 0.7s desktop / 3.5s mobile. CLS 0 on both. Total blocking time 20ms desktop,
 ~440ms mobile. ~570KB transferred on mobile, 53KB of it gzipped JavaScript
-(GSAP + OGL + the app) and 37KB the display face.
+(GSAP + OGL + the app) and 45KB the display face.
 
 Mobile performance is short of the 90 target, and honestly so: it is 78, not 90.
 Two things account for the gap.
@@ -247,6 +247,26 @@ The smaller one is the self-hosted display face, worth about 3 points: it is the
 LCP element, and `font-display: swap` repaints it. That was a deliberate trade —
 a wordmark that renders as Palatino on one machine and Georgia on another is a
 worse outcome for this particular site than three Lighthouse points.
+
+## The display face
+
+The wordmark, the scene titles and the piece names are set in **Black Chancery**
+(Doug Miles and Earl Allen, 1991), a calligraphic display face released as
+freeware. `public/fonts/black-chancery-400.woff2` is the original TrueType
+release subset to Latin-1 plus the typographic punctuation this page uses.
+
+Two things about this face are worth knowing before changing it:
+
+- **It puts far more ink below the baseline than a text serif.** The scene title
+  clips its own line box (`overflow: hidden` is what hides each character before
+  it animates in), so descenders need leading that a 1.0 line-height does not
+  give them — hence `line-height: 1.15` on `.scene-title`. The e2e test
+  `draws every title inside the box that clips it` measures the real ink extents
+  of every real title against that clip box, at both viewport sizes.
+- **It ships one weight and no small caps.** Every `--font-display` rule asks
+  for 400. The 1991 outlines also skip about twenty Latin-1 codepoints (×, ð,
+  þ, the vulgar fractions); those fall through to the serif stack, which is why
+  `unicode-range` declares the whole block rather than an exact list.
 
 ## Deploying
 
