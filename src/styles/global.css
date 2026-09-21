@@ -247,7 +247,6 @@ html.is-enhanced body {
 .wordmark__line--small {
   font-size: clamp(0.9rem, 2.4vw, 1.5rem);
   letter-spacing: 0.42em;
-  text-transform: uppercase;
   opacity: 0.78;
   padding-block: 0.35em;
 }
