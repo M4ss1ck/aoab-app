@@ -4,6 +4,7 @@ import { INTRO_FRAGMENT } from './gl/glsl/intro';
 import { SCENE_VERTEX } from './gl/glsl/scene';
 import { hexToRgb } from './colour';
 import { decodeImage } from './gl/decode';
+import { ProgressPacer } from './progress';
 
 export interface IntroOptions {
   canvas: HTMLCanvasElement;
@@ -33,6 +34,13 @@ const MAX_DURATION = 3;
  * shortest run in which the three phases still read.
  */
 const MIN_DURATION = 2.2;
+/**
+ * How long the counter takes to run up to its holding value once loading is
+ * genuinely done, and how long the final step to 100 takes across the fade.
+ * Both are count-ups rather than jumps: a number that leaps reads as broken.
+ */
+const PROGRESS_CATCH_UP = 0.8;
+const PROGRESS_FINISH = 0.35;
 
 /*
  * The intro runs on every visit rather than once per session.
@@ -64,9 +72,11 @@ export class Intro {
   private resolveFinished?: () => void;
   private resolveHeroReady?: (loaded: boolean) => void;
   private readonly heroReady: Promise<boolean>;
+  private readonly progress: ProgressPacer;
 
   constructor(options: IntroOptions) {
     this.options = options;
+    this.progress = new ProgressPacer((value) => options.onProgress(value), MAX_DURATION * 1.6);
     this.heroReady = new Promise<boolean>((resolve) => {
       this.resolveHeroReady = resolve;
     });
@@ -209,7 +219,7 @@ export class Intro {
         this.program.uniforms.uDraw.value = 1;
         this.program.uniforms.uInk.value = 1;
         this.program.uniforms.uColour.value = 1;
-        this.options.onProgress(1);
+        this.progress.settle();
         void this.heroReady.then(() => this.keepRendering(0.2));
         void this.options.loading.then(() => {
           gsap.to(this.program.uniforms.uFade, {
@@ -221,23 +231,12 @@ export class Intro {
         return;
       }
 
-      let galleryReady = false;
-      void this.options.loading.then(() => {
-        galleryReady = true;
-      });
+      void this.options.loading.then(() => this.progress.markReady(PROGRESS_CATCH_UP));
 
       // Progress is honest in both directions. It rises smoothly so it never
       // looks stuck, but it is capped below 100 until the artwork has actually
       // arrived, and the handover waits for the same signal.
-      const pace = { value: 0 };
-      gsap.to(pace, {
-        value: 1,
-        duration: MAX_DURATION * 1.6,
-        ease: 'power2.out',
-        onUpdate: () => {
-          this.options.onProgress(galleryReady ? Math.max(pace.value, 0.99) : pace.value * 0.92);
-        },
-      });
+      this.progress.start();
 
       void this.heroReady.then(() => {
         if (this.finished) return;
@@ -267,7 +266,9 @@ export class Intro {
             this.timeline?.pause();
             this.renderUntil = performance.now();
             void this.options.loading.then(() => {
-              this.options.onProgress(1);
+              // Counts the last percent up across the fade rather than snapping,
+              // so the indicator is seen reaching 100 instead of stopping at 099.
+              this.progress.settle(PROGRESS_FINISH);
               this.keepRendering(1);
               gsap.to(this.program.uniforms.uFade, {
                 value: 0,
@@ -290,7 +291,7 @@ export class Intro {
     gsap.killTweensOf(this.program.uniforms.uInk);
     gsap.killTweensOf(this.program.uniforms.uColour);
     gsap.killTweensOf(this.program.uniforms.uFade);
-    this.options.onProgress(1);
+    this.progress.settle();
     this.program.uniforms.uFade.value = 0;
     this.finish();
   }
@@ -313,6 +314,7 @@ export class Intro {
 
   destroy(): void {
     cancelAnimationFrame(this.raf);
+    this.progress.destroy();
     this.timeline?.kill();
     window.removeEventListener('resize', this.resize);
   }

@@ -139,6 +139,51 @@ test.describe('the enhanced experience', () => {
     await expect(page.locator('[data-intro]')).toBeHidden();
   });
 
+  test('the loading counter finishes on 100, never 099', async ({ page }) => {
+    // Regression guard. The pacing tween used to outlive the completion signal
+    // and write 099 back over the top of it, so the indicator visibly stalled
+    // one percent short for the whole handover.
+    await page.addInitScript(() => {
+      // Sampled per frame rather than through a MutationObserver: the init
+      // script runs before the document has a body to observe.
+      const seen: { text: string; right: number }[] = [];
+      (window as unknown as { __progress: typeof seen }).__progress = seen;
+      const sample = () => {
+        const el = document.querySelector<HTMLElement>('[data-intro-progress-value]');
+        const text = el?.textContent?.trim();
+        if (el && text && seen.at(-1)?.text !== text) {
+          seen.push({ text, right: Math.round(el.getBoundingClientRect().right) });
+        }
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+
+    await page.goto('/');
+    await ready(page);
+    await expect(page.locator('[data-intro]')).toBeHidden();
+
+    const seen = await page.evaluate(
+      () => (window as unknown as { __progress: { text: string; right: number }[] }).__progress,
+    );
+    expect(seen.at(-1)?.text).toBe('100');
+    // Unpadded, so the count reads 0, 1 ... 100 with no leading zeros.
+    expect(seen.map((entry) => entry.text)).not.toContain('000');
+    expect(seen.every((entry) => !/^0\d/.test(entry.text))).toBe(true);
+    // The box is three figures wide whatever the count, so nothing shifts as
+    // digits are added. Measured while the intro is still on screen.
+    const edges = new Set(seen.filter((entry) => entry.right > 0).map((entry) => entry.right));
+    expect([...edges]).toHaveLength(1);
+    // And the bar itself, not just the digits.
+    const scale = await page.evaluate(
+      () =>
+        document
+          .querySelector<HTMLElement>('[data-intro-progress]')
+          ?.style.getPropertyValue('--progress') ?? '',
+    );
+    expect(Number(scale)).toBe(1);
+  });
+
   test('animates the scene title once per change, not twice', async ({ page }) => {
     // Regression guard. The renderer announces a scene change when the
     // transition starts and used to announce it again when the transition
