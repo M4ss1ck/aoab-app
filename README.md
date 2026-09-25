@@ -36,8 +36,29 @@ in the fallback gallery, and in the closing wall, with a transition seeded from
 its own filename and chrome colours taken from its own palette.
 
 The first run downloads ~18MB of model weights and takes a few minutes per
-image. Every run after that is a no-op on unchanged files — the pipeline is
-keyed by content hash, so re-running costs about four seconds.
+image. Supported inputs are JPEG, PNG, WebP, and AVIF. Outputs have a maximum
+edge of 3200px. Sources already at that resolution are downsampled directly;
+smaller sources use tiled super-resolution with its input capped at 800px per
+edge, bounding both inference work and the intermediate output allocation.
+Existing cached outputs are retained; this change does not force regeneration.
+
+Completed images are checkpointed atomically after each heavy and light pass.
+If a run is interrupted, run `pnpm assets` again: only unfinished or changed
+images are processed. Avoid `--force` when resuming, since it discards cache
+hits. Input decoding is checked before inference, and progress names each image
+and upscale tile. The manifest is replaced only after the whole run succeeds.
+Unchanged inputs load no models, though they are decoded for validation.
+
+To run the pipeline regression tests after the asset environment is installed:
+
+```sh
+.venv-assets/bin/python -m unittest discover -s scripts/assets -p 'test_*.py'
+```
+
+Outputs left by older interrupted runs are not automatically trusted without
+cache keys. Before recovering those manually, preserve the old cache and
+manifest, confirm the sources have not changed, decode each output pair, and
+check dimensions. Never use `--force` merely to repair a missing manifest.
 
 Removing an image is just as simple: delete it from `src/assets/source/` and run
 `pnpm assets` again. Its derived files and manifest entry go with it.

@@ -30,3 +30,6 @@ pnpm-debug.log*
 # playwright
 test-results/
 playwright-report/
+
+# Python asset pipeline bytecode
+__pycache__/

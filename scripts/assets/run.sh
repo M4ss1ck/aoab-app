@@ -15,7 +15,7 @@ if [ ! -x "$VENV/bin/python" ]; then
   python3 -m venv "$VENV"
 fi
 
-if ! "$VENV/bin/python" -c "import spandrel, transformers, cv2, PIL" 2>/dev/null; then
+if ! "$VENV/bin/python" -c "import spandrel, transformers, cv2; from PIL import features; assert features.check('avif')" 2>/dev/null; then
   echo "installing pipeline dependencies (one time, a few minutes)"
   "$VENV/bin/pip" install -q --upgrade pip
   "$VENV/bin/pip" install -q -r "$ROOT/scripts/assets/requirements.txt"
@@ -27,4 +27,4 @@ if [ ! -f "$UPSCALER" ]; then
   curl -fL --progress-bar -o "$UPSCALER" "$UPSCALER_URL"
 fi
 
-exec "$VENV/bin/python" "$ROOT/scripts/assets/pipeline.py" "$@"
+exec "$VENV/bin/python" -u "$ROOT/scripts/assets/pipeline.py" "$@"

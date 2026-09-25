@@ -53,7 +53,7 @@ UPSCALER_URL = (
 )
 DEPTH_MODEL = "depth-anything/Depth-Anything-V2-Small-hf"
 
-SUPPORTED = {".png", ".jpg", ".jpeg", ".webp"}
+SUPPORTED = {".png", ".jpg", ".jpeg", ".webp", ".avif"}
 
 # The intro hero needs an edge map; nothing else does.
 EDGE_MAP_IDS = {"myne"}
@@ -89,7 +89,14 @@ def load_cache() -> dict:
 
 def save_cache(cache: dict) -> None:
     CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CACHE_FILE.write_text(json.dumps(cache, indent=2, sort_keys=True))
+    atomic_json(CACHE_FILE, cache)
+
+
+def atomic_json(path: Path, payload: dict) -> None:
+    """An interrupted write must not destroy the previous checkpoint."""
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    os.replace(temporary, path)
 
 
 # --------------------------------------------------------------------------
@@ -112,13 +119,32 @@ def ensure_upscaler():
 
 @torch.no_grad()
 def upscale(descriptor, img: Image.Image) -> Image.Image:
-    """Tiled 4x upscale. Tiling keeps peak memory flat regardless of input size."""
+    """Bound inference and the output tensor to the delivered resolution.
+
+    Full-resolution sources need only downsampling. Smaller sources use the
+    model at no more than target/scale pixels per edge, rather than generating
+    a huge intermediate that will immediately be discarded.
+    """
+    original_size = img.size
+    target_edge = min(max(original_size) * descriptor.scale, MAX_UPSCALED_EDGE)
+    ratio = target_edge / max(original_size)
+    target_size = tuple(max(1, round(edge * ratio)) for edge in original_size)
+    if max(original_size) >= MAX_UPSCALED_EDGE:
+        return img.convert("RGB").resize(target_size, Image.LANCZOS)
+    input_edge = max(1, MAX_UPSCALED_EDGE // descriptor.scale)
+    if max(img.size) > input_edge:
+        ratio = input_edge / max(img.size)
+        img = img.resize(
+            tuple(max(1, round(edge * ratio)) for edge in img.size), Image.LANCZOS
+        )
     arr = np.asarray(img.convert("RGB"), dtype=np.float32) / 255.0
     tensor = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0)
     _, _, h, w = tensor.shape
     scale = descriptor.scale
     out = torch.zeros((1, 3, h * scale, w * scale), dtype=torch.float32)
 
+    tiles = ((h + TILE - 1) // TILE) * ((w + TILE - 1) // TILE)
+    completed = 0
     for y in range(0, h, TILE):
         for x in range(0, w, TILE):
             # Pad each tile so the model sees context across the seam, then crop
@@ -135,14 +161,14 @@ def upscale(descriptor, img: Image.Image) -> Image.Image:
                 tile_out[:, :, top : top + th, left : left + tw]
             )
 
+            completed += 1
+            print(f"    upscale tile {completed}/{tiles}", flush=True)
+
     result = out.clamp(0, 1).squeeze(0).permute(1, 2, 0).numpy()
     up = Image.fromarray((result * 255.0 + 0.5).astype(np.uint8), mode="RGB")
 
-    if max(up.size) > MAX_UPSCALED_EDGE:
-        ratio = MAX_UPSCALED_EDGE / max(up.size)
-        up = up.resize(
-            (round(up.width * ratio), round(up.height * ratio)), Image.LANCZOS
-        )
+    if up.size != target_size:
+        up = up.resize(target_size, Image.LANCZOS)
     return up
 
 
@@ -421,9 +447,26 @@ def main() -> int:
         print("no source images found")
         return 1
 
+    # Decode all inputs before spending time on models. Duplicate stems would
+    # otherwise silently overwrite each other's output and cache entry.
+    seen = set()
+    for path in sources:
+        if path.stem in seen:
+            raise SystemExit(f"duplicate asset id: {path.stem}")
+        seen.add(path.stem)
+        with Image.open(path) as image:
+            image.load()
+
     cache = {} if force else load_cache()
     entries: dict[str, dict] = cache.get("entries", {}) if not force else {}
     known = {p.stem for p in sources}
+
+    def checkpoint() -> None:
+        save_cache({
+            "heavyVersion": HEAVY_VERSION,
+            "lightVersion": LIGHT_VERSION,
+            "entries": entries,
+        })
 
     # Drop entries whose source file is gone, so deleting an image is as simple
     # as deleting the file.
@@ -434,9 +477,10 @@ def main() -> int:
         print(f"  removed {orphan} (source deleted)")
 
     def outputs_present(identifier: str) -> bool:
-        return (OUT_DIR / f"{identifier}.webp").exists() and (
-            OUT_DIR / f"{identifier}.depth.webp"
-        ).exists()
+        required = [f"{identifier}.webp", f"{identifier}.depth.webp"]
+        if identifier in EDGE_MAP_IDS:
+            required.append(f"{identifier}.edge.webp")
+        return all((OUT_DIR / name).exists() for name in required)
 
     heavy_stale = [
         p
@@ -454,6 +498,7 @@ def main() -> int:
 
         for index, path in enumerate(heavy_stale, start=1):
             started = time.time()
+            print(f"  [{index}/{len(heavy_stale)}] starting {path.name}", flush=True)
             heavy = run_heavy(path, descriptor, depth_pipe)
             entry = entries.setdefault(path.stem, {})
             entry.update(heavy)
@@ -461,6 +506,7 @@ def main() -> int:
             entry["source"] = path.name
             entry["heavyKey"] = content_key(path, HEAVY_VERSION)
             entry.pop("lightKey", None)  # new pixels mean the light pass is stale too
+            checkpoint()
             print(
                 f"  [{index}/{len(heavy_stale)}] {path.name} -> "
                 f"{heavy['width']}x{heavy['height']} ({time.time() - started:.1f}s)"
@@ -480,6 +526,7 @@ def main() -> int:
             entry = entries[path.stem]
             entry.update(run_light(path))
             entry["lightKey"] = content_key(path, LIGHT_VERSION)
+            checkpoint()
             print(f"  {path.name} palette {' '.join(entry['palette'])}")
     else:
         print(f"palette + focus + lqip: up to date ({len(sources)} images)")
@@ -494,7 +541,7 @@ def main() -> int:
             {k: v for k, v in e.items() if k not in internal} for e in ordered
         ],
     }
-    MANIFEST.write_text(json.dumps(payload, indent=2) + "\n")
+    atomic_json(MANIFEST, payload)
     save_cache({"heavyVersion": HEAVY_VERSION, "lightVersion": LIGHT_VERSION, "entries": entries})
 
     print(f"manifest written to {MANIFEST.relative_to(ROOT)}")
