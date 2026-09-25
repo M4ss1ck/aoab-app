@@ -4,5 +4,5 @@ torchvision>=0.17
 transformers>=4.45
 spandrel>=0.4
 opencv-python>=4.9
-pillow>=10.2
+pillow>=11.3
 numpy>=1.26
