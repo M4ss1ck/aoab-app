@@ -11,5 +11,18 @@
   "04": { "title": "Ascent", "order": 80, "credit": { "artist": "ado002", "url": "https://www.pixiv.net/artworks/81401409" } },
   "09": { "title": "Nightwisteria", "order": 90, "credit": { "artist": "パンダがパンダでパンダなのだ", "url": "https://wall.alphacoders.com/big.php?i=1223686" } },
   "06": { "title": "Ascendance", "order": 100, "transition": "starfield", "credit": { "artist": "genya", "url": "https://www.pixiv.net/artworks/98353878" } },
+  "11": { "title": "Starlit Vow" },
+  "12": { "title": "Golden Boughs", "credit": { "artist": "yuuko24" } },
+  "13": { "title": "Starwoven", "credit": { "artist": "rinndouk" } },
+  "14": { "title": "The Gilded Court", "credit": { "artist": "kaze_hime" } },
+  "15": { "title": "Bloomtide", "credit": { "artist": "yuuko24" } },
+  "16": { "title": "Quiet Counsel" },
+  "17": { "title": "Between the Pages" },
+  "18": { "title": "Sanctuary" },
+  "19": { "title": "A Little Portrait", "credit": { "artist": "koji" } },
+  "20": { "title": "Sunlit Reverie" },
+  "21": { "title": "Homecoming" },
+  "22": { "title": "Verdant Blessing" },
+  "23": { "title": "Hydrangea Hush" },
   "myne": { "title": "Myne", "credit": { "artist": "genya", "url": "https://www.pixiv.net/artworks/98353878" } }
 }
